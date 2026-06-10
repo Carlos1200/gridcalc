@@ -13,7 +13,7 @@ import { evaluateAst } from '../evaluator/interpreter';
 import { buildDefaultRegistry } from '../functions/index';
 import type { FunctionRegistry } from '../functions/registry';
 import { parseFormula } from '../parser/parser';
-import { cellAddressFromKey, cellAddressKey } from '../reference/addressing';
+import { cellAddressFromKey, cellAddressKey, parseCellReference } from '../reference/addressing';
 import type { SimpleCellAddress, SimpleCellRange } from '../reference/types';
 import { parseNumericString } from '../value/coercion';
 import {
@@ -39,6 +39,17 @@ type Cell =
   /** `value` is null until the first evaluation. */
   | { kind: 'formula'; formula: string; ast: Ast; value: ScalarValue | null };
 
+/**
+ * Named expressions live as virtual cells on this reserved sheet id
+ * (col 0, row = name id), so the dependency graph tracks them like any cell:
+ * formulas recalculate when a name's precedents change, cycles through names
+ * are detected, and defining a name repairs the #NAME? of earlier users.
+ */
+const NAMES_SHEET = -1;
+
+/** Identifier-shaped, not a cell address, not a boolean literal. */
+const NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_.]*$/;
+
 export class Engine {
   readonly config: EngineConfig;
   /** Per-engine registry; the default function set registers here. */
@@ -52,6 +63,12 @@ export class Engine {
    * that pointed into the removed sheet read #REF! forever, like Excel.
    */
   private readonly sheets: (string | undefined)[] = ['Sheet1'];
+  /**
+   * lower-cased name -> stable id (= row on NAMES_SHEET). Ids are allocated
+   * on first mention — even by a formula using a not-yet-defined name — so
+   * the graph edge exists and a later definition triggers recalculation.
+   */
+  private readonly nameIds = new Map<string, { id: number; display: string }>();
   /** Set while inside batch(): accumulates work instead of recalculating. */
   private pending: { seeds: SimpleCellAddress[]; direct: ChangedCell[] } | undefined;
 
@@ -117,6 +134,60 @@ export class Engine {
     if (this.sheets[sheet] === undefined) {
       throw new Error(`Sheet ${sheet} does not exist`);
     }
+  }
+
+  /**
+   * Defines (or redefines) a named expression usable as `=IVA*2`. Content
+   * works like cell content: a scalar or a formula string. Cell references
+   * inside it must be sheet-qualified (`=Sheet1!$A$1*2`), since a name does
+   * not live on any sheet. Returns the cells that changed as a consequence.
+   */
+  addNamedExpression(name: string, content: RawCellContent): ChangedCell[] {
+    if (!NAME_PATTERN.test(name) || parseCellReference(name) || /^(true|false)$/i.test(name)) {
+      throw new Error(`Invalid named expression name "${name}"`);
+    }
+    if (this.pending) {
+      throw new Error('addNamedExpression() inside batch() is not supported');
+    }
+    const id = this.nameId(name);
+    this.nameIds.set(name.toLowerCase(), { id, display: name });
+    const address: SimpleCellAddress = { sheet: NAMES_SHEET, col: 0, row: id };
+    this.applyContent(address, content);
+    return this.recalculate([address]).filter((change) => change.address.sheet !== NAMES_SHEET);
+  }
+
+  /** Undefines a name; formulas using it go back to #NAME?. */
+  removeNamedExpression(name: string): ChangedCell[] {
+    const entry = this.nameIds.get(name.toLowerCase());
+    const address: SimpleCellAddress | undefined =
+      entry && { sheet: NAMES_SHEET, col: 0, row: entry.id };
+    if (!address || !this.cells.has(cellAddressKey(address))) {
+      throw new Error(`Named expression "${name}" does not exist`);
+    }
+    if (this.pending) {
+      throw new Error('removeNamedExpression() inside batch() is not supported');
+    }
+    this.applyContent(address, null);
+    return this.recalculate([address]).filter((change) => change.address.sheet !== NAMES_SHEET);
+  }
+
+  /** Defined names, with their original casing. */
+  listNamedExpressions(): string[] {
+    return [...this.nameIds.values()]
+      .filter(({ id }) => this.cells.has(cellAddressKey({ sheet: NAMES_SHEET, col: 0, row: id })))
+      .map(({ display }) => display);
+  }
+
+  /** Allocates a stable id for a name on first mention. */
+  private nameId(name: string): number {
+    const key = name.toLowerCase();
+    const existing = this.nameIds.get(key);
+    if (existing) {
+      return existing.id;
+    }
+    const id = this.nameIds.size;
+    this.nameIds.set(key, { id, display: name });
+    return id;
   }
 
   /**
@@ -188,8 +259,25 @@ export class Engine {
 
     if (typeof content === 'string' && content.startsWith('=')) {
       const ast = parseFormula(content, this.config, (name) => this.getSheetId(name));
+      const deps = extractDependencies(ast, address);
+      if (
+        address.sheet === NAMES_SHEET &&
+        (deps.cells.some((cell) => cell.sheet === NAMES_SHEET) ||
+          deps.ranges.some((range) => range.start.sheet === NAMES_SHEET))
+      ) {
+        // An unqualified reference resolved against the names sheet.
+        throw new Error(
+          'Named expressions must use sheet-qualified references (e.g. =Sheet1!$A$1*2)',
+        );
+      }
       this.cells.set(key, { kind: 'formula', formula: content, ast, value: null });
-      this.graph.setFormula(address, extractDependencies(ast, address));
+      // Names become edges to their virtual cells, so the graph recalculates
+      // users when a name's value changes (or when it gets defined at all).
+      const cells = [
+        ...deps.cells,
+        ...deps.names.map((name): SimpleCellAddress => ({ sheet: NAMES_SHEET, col: 0, row: this.nameId(name) })),
+      ];
+      this.graph.setFormula(address, { ...deps, cells });
       // Recalculation reports the new value.
       return undefined;
     }
@@ -242,6 +330,14 @@ export class Engine {
       functions: this.functions,
       getCellValue: (addr) => this.rawCellValue(addr),
       getRangeValues: (range) => this.rawRangeValues(range),
+      getNamedExpressionValue: (name) => {
+        const entry = this.nameIds.get(name.toLowerCase());
+        if (!entry) {
+          return undefined;
+        }
+        const cell = this.cells.get(cellAddressKey({ sheet: NAMES_SHEET, col: 0, row: entry.id }));
+        return cell ? (cell.value ?? EmptyValue) : undefined;
+      },
     };
   }
 

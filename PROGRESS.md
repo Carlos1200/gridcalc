@@ -76,7 +76,10 @@
   - Ids de hoja **estables** (slot nunca se reutiliza): eliminar una hoja no desplaza los índices de las demás
   - `removeSheet` borra celdas, recalcula dependientes externos → leen `#REF!`; re-crear una hoja con el mismo nombre NO resucita referencias viejas
   - `buildEmpty()` arranca con `Sheet1`; nombres auto `SheetN` evitan colisiones
-- [ ] **Named expressions (`=IVA`) + `addNamedExpression`** ← SIGUIENTE PASO (el parser ya produce `NamedExpressionAst`)
+- [x] Named expressions (`=IVA`): `addNamedExpression`/`removeNamedExpression`/`listNamedExpressions`
+  - Cada nombre es una **celda virtual** en la hoja reservada `NAMES_SHEET = -1` (col 0, row = id estable): el grafo recalcula usuarios cuando cambian los precedentes del nombre, detecta ciclos a través de nombres, y definir un nombre repara los `#NAME?` previos (el id se asigna en la primera mención, aunque aún no exista)
+  - Contenido como el de una celda (escalar o fórmula); las refs dentro de un nombre deben ir calificadas con hoja (`=Sheet1!$A$1*2`) o lanza
+  - Nombres case-insensitive; inválidos (`A1`, `TRUE`, `2x`) lanzan
 - [ ] Ajuste de referencias al copiar/mover (los flags absolute ya se guardan)
 - [ ] Traducción de nombres de función (`=SUMA(...)` → SUM) en `i18n/` — separadores ya soportados
 - [ ] Subir a ~150 funciones

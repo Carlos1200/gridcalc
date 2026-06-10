@@ -39,9 +39,12 @@ export function evaluateAst(ast: Ast, context: EvaluationContext): RawInterprete
       return context.getRangeValues(
         resolveRange(ast.start, ast.end, context.formulaAddress),
       );
-    case 'NAMED_EXPRESSION':
-      // Phase 2; until then an unknown name is #NAME?, like in Excel.
-      return new CellError(CellErrorType.NAME, `Unknown name "${ast.name}"`);
+    case 'NAMED_EXPRESSION': {
+      const value = context.getNamedExpressionValue(ast.name);
+      return value === undefined
+        ? new CellError(CellErrorType.NAME, `Unknown name "${ast.name}"`)
+        : value;
+    }
     case 'FUNCTION_CALL':
       return evaluateFunctionCall(ast, context);
     case 'UNARY_OP':

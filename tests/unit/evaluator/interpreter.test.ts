@@ -35,6 +35,7 @@ function makeContext(
     formulaAddress: { sheet: 0, col: 25, row: 99 },
     config: DEFAULT_CONFIG,
     functions,
+    getNamedExpressionValue: () => undefined,
     getCellValue: (addr) => valueAt(addr.col, addr.row),
     getRangeValues: (range) => {
       const rows: RawScalarValue[][] = [];

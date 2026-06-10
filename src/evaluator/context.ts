@@ -13,4 +13,6 @@ export interface EvaluationContext {
   getCellValue(address: SimpleCellAddress): RawScalarValue;
   /** Values of a rectangular range, row-major. */
   getRangeValues(range: SimpleCellRange): RawScalarValue[][];
+  /** Current value of a named expression; undefined -> #NAME?. */
+  getNamedExpressionValue(name: string): RawScalarValue | undefined;
 }
