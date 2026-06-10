@@ -1,6 +1,7 @@
 /** Extraction of cell/range/name dependencies from a parsed formula AST. */
 
 import type { Ast } from '../ast/nodes';
+import { cellAddressKey } from '../reference/addressing';
 import type { CellReference, SimpleCellAddress, SimpleCellRange } from '../reference/types';
 
 /**
@@ -37,10 +38,6 @@ function resolveReference(ref: CellReference, formulaAddress: SimpleCellAddress)
   };
 }
 
-function addressKey(addr: SimpleCellAddress): string {
-  return `${addr.sheet}:${addr.col}:${addr.row}`;
-}
-
 /**
  * Walks the AST of a formula living at `formulaAddress` and collects every
  * reference it contains. Relative/absolute flags do not matter here: by parse
@@ -56,7 +53,7 @@ export function extractDependencies(ast: Ast, formulaAddress: SimpleCellAddress)
     switch (node.type) {
       case 'CELL_REFERENCE': {
         const addr = resolveReference(node.reference, formulaAddress);
-        cells.set(addressKey(addr), addr);
+        cells.set(cellAddressKey(addr), addr);
         break;
       }
       case 'RANGE_REFERENCE': {
@@ -67,7 +64,7 @@ export function extractDependencies(ast: Ast, formulaAddress: SimpleCellAddress)
           start: { sheet: start.sheet, col: Math.min(start.col, end.col), row: Math.min(start.row, end.row) },
           end: { sheet: start.sheet, col: Math.max(start.col, end.col), row: Math.max(start.row, end.row) },
         };
-        ranges.set(`${addressKey(range.start)}-${addressKey(range.end)}`, range);
+        ranges.set(`${cellAddressKey(range.start)}-${cellAddressKey(range.end)}`, range);
         break;
       }
       case 'NAMED_EXPRESSION':

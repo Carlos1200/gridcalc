@@ -27,11 +27,13 @@ export {
 } from './value/dates';
 export { buildConfig, DEFAULT_CONFIG, type EngineConfig } from './config/types';
 export {
+  cellAddressKey,
   colLetterToIndex,
   formatCellReference,
   indexToColLetter,
   parseCellReference,
 } from './reference/addressing';
+export { Engine, type ChangedCell, type RawCellContent } from './engine/Engine';
 export type {
   CellReference,
   RangeReference,

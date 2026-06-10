@@ -55,8 +55,11 @@
   - [ ] lookup: VLOOKUP, HLOOKUP, INDEX, MATCH
   - [ ] information: ISBLANK, ISNUMBER, ISTEXT, ISERROR
   - [ ] datetime: TODAY, NOW, DATE
-- [ ] `engine/Engine.ts` — `buildEmpty`, `setCellContents` (devuelve `ChangedCell[]`), `getCellValue`, `getCellFormula`, `batch`
-- [ ] Reemplazar el evaluador placeholder del harness golden (`tests/golden/harness.ts` → `evaluateFixture`) por el Engine real
+- [x] `engine/Engine.ts` — `buildEmpty`, `setCellContents` (devuelve `ChangedCell[]`, solo celdas cuyo valor cambió), `getCellValue` (null = vacía), `getCellFormula`, `batch` (un solo recálculo; recalcula incluso si el callback lanza)
+  - Contenido tecleado se parsea estilo Excel: `"42"`→42, `"TRUE"`→true; `null`/`""` limpia la celda
+  - Resultado vacío de fórmula se materializa a 0 (`=A1` con A1 vacía); `-0` se normaliza a 0 (Excel no tiene cero negativo)
+  - Ciclos: `#CIRCULAR!` asignado antes de evaluar el resto del plan, dependientes lo propagan; al romper el ciclo se recuperan los valores
+- [x] Reemplazar el evaluador placeholder del harness golden (`tests/golden/harness.ts` → `evaluateFixture`) por el Engine real (fórmula en ZZ10000, inputs vía `setCellContents`)
 - [ ] Capa de redondeo compatible con Excel (`precisionRounding`) — riesgo #1 de la spec §19
 - [ ] Ejemplo en README: crear motor, `=SUM(A1:A3)`, editar A1, ver recálculo
 - [ ] **Criterio de fase:** golden tests de las 40 funciones pasan; editar una celda recalcula solo dependientes; ciclos → `#CIRCULAR`

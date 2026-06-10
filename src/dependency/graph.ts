@@ -7,6 +7,7 @@
  * dedicated range nodes (HyperFormula-style) are an optimization for later.
  */
 
+import { cellAddressKey } from '../reference/addressing';
 import type { SimpleCellAddress } from '../reference/types';
 import type { FormulaDependencies } from './extract';
 
@@ -24,10 +25,6 @@ export interface RecalculationPlan {
    * error as a regular value and propagate it.
    */
   cyclic: SimpleCellAddress[];
-}
-
-function keyOf(addr: SimpleCellAddress): string {
-  return `${addr.sheet}:${addr.col}:${addr.row}`;
 }
 
 function addressOf(key: string): SimpleCellAddress {
@@ -48,17 +45,17 @@ export class DependencyGraph {
    * Ranges are expanded to individual cells.
    */
   setFormula(address: SimpleCellAddress, dependencies: FormulaDependencies): void {
-    const key = keyOf(address);
+    const key = cellAddressKey(address);
     this.clearEdges(key);
 
     const edges = new Set<string>();
     for (const cell of dependencies.cells) {
-      edges.add(keyOf(cell));
+      edges.add(cellAddressKey(cell));
     }
     for (const range of dependencies.ranges) {
       for (let col = range.start.col; col <= range.end.col; col++) {
         for (let row = range.start.row; row <= range.end.row; row++) {
-          edges.add(keyOf({ sheet: range.start.sheet, col, row }));
+          edges.add(cellAddressKey({ sheet: range.start.sheet, col, row }));
         }
       }
     }
@@ -82,7 +79,7 @@ export class DependencyGraph {
 
   /** Unregisters the formula at `address` (cell deleted or set to a plain value). */
   removeFormula(address: SimpleCellAddress): void {
-    const key = keyOf(address);
+    const key = cellAddressKey(address);
     this.clearEdges(key);
     this.precedents.delete(key);
     this.volatileCells.delete(key);
@@ -90,13 +87,13 @@ export class DependencyGraph {
 
   /** Cells the formula at `address` reads (ranges already expanded). */
   getPrecedents(address: SimpleCellAddress): SimpleCellAddress[] {
-    const set = this.precedents.get(keyOf(address));
+    const set = this.precedents.get(cellAddressKey(address));
     return set ? [...set].map(addressOf) : [];
   }
 
   /** Formula cells that read `address`. */
   getDependents(address: SimpleCellAddress): SimpleCellAddress[] {
-    const set = this.dependents.get(keyOf(address));
+    const set = this.dependents.get(cellAddressKey(address));
     return set ? [...set].map(addressOf) : [];
   }
 
@@ -153,7 +150,7 @@ export class DependencyGraph {
     };
 
     for (const addr of changed) {
-      seed(keyOf(addr));
+      seed(cellAddressKey(addr));
     }
     for (const key of this.volatileCells) {
       seed(key);

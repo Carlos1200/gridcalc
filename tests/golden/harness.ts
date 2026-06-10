@@ -10,7 +10,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { CellError, parseNumericString, type ScalarValue } from '../../src/index';
+import { CellError, Engine, parseCellReference, type ScalarValue } from '../../src/index';
 
 export interface GoldenFixture {
   formula: string;
@@ -32,27 +32,32 @@ export function loadFixtureFiles(fixturesDir: string): FixtureFile[] {
     }));
 }
 
-/**
- * Evaluates one fixture through the engine.
- *
- * TEMPORARY: the Engine does not exist yet (phase 0). Until it does, this
- * placeholder only understands literal (non-"=") content, which is enough
- * for the dummy fixture that proves the CI pipeline works end to end.
- * Replace its body with a real Engine call in phase 1.
- */
-export function evaluateFixture(fixture: GoldenFixture): ScalarValue {
-  if (fixture.formula.startsWith('=')) {
-    throw new Error(
-      `Golden harness cannot evaluate "${fixture.formula}" yet: Engine not implemented (phase 1).`,
-    );
-  }
-  return parseNumericString(fixture.formula) ?? fixture.formula;
+/** Far away from any realistic fixture input cell. */
+const FORMULA_CELL = { sheet: 0, col: 701, row: 9999 }; // ZZ10000
+
+/** Evaluates one fixture through a fresh Engine. */
+export function evaluateFixture(fixture: GoldenFixture): ScalarValue | null {
+  const engine = Engine.buildEmpty();
+  engine.batch(() => {
+    for (const [ref, value] of Object.entries(fixture.inputs ?? {})) {
+      const parsed = parseCellReference(ref);
+      if (!parsed) {
+        throw new Error(`Invalid input reference "${ref}" in fixture`);
+      }
+      engine.setCellContents({ sheet: 0, col: parsed.col, row: parsed.row }, value);
+    }
+    engine.setCellContents(FORMULA_CELL, fixture.formula);
+  });
+  return engine.getCellValue(FORMULA_CELL);
 }
 
 const FLOAT_TOLERANCE = 1e-9;
 
 /** Compares an engine result with the expected fixture value. */
-export function valuesMatch(actual: ScalarValue, expected: ScalarValue | string): boolean {
+export function valuesMatch(actual: ScalarValue | null, expected: ScalarValue | string): boolean {
+  if (actual === null) {
+    return false; // fixtures never expect an empty cell
+  }
   if (actual instanceof CellError) {
     return actual.toString() === expected;
   }

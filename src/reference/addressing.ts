@@ -1,6 +1,11 @@
 /** A1-notation addressing: column letters <-> 0-based indices. */
 
-import type { CellReference } from './types';
+import type { CellReference, SimpleCellAddress } from './types';
+
+/** Canonical map key for an absolute cell address: "sheet:col:row". */
+export function cellAddressKey(address: SimpleCellAddress): string {
+  return `${address.sheet}:${address.col}:${address.row}`;
+}
 
 /** `A` -> 0, `Z` -> 25, `AA` -> 26 (bijective base 26). */
 export function colLetterToIndex(letters: string): number {
