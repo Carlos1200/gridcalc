@@ -13,6 +13,8 @@ export enum CellErrorType {
   NULL = 'NULL', // #NULL!
   SPILL = 'SPILL', // #SPILL! (phase 3)
   CIRCULAR = 'CIRCULAR', // circular reference
+  /** Syntax error in a stored formula (#ERROR!, same convention as HyperFormula). */
+  ERROR = 'ERROR',
 }
 
 const ERROR_DISPLAY: Record<CellErrorType, string> = {
@@ -25,6 +27,7 @@ const ERROR_DISPLAY: Record<CellErrorType, string> = {
   [CellErrorType.NULL]: '#NULL!',
   [CellErrorType.SPILL]: '#SPILL!',
   [CellErrorType.CIRCULAR]: '#CIRCULAR!',
+  [CellErrorType.ERROR]: '#ERROR!',
 };
 
 export class CellError {

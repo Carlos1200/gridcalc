@@ -1,0 +1,189 @@
+/**
+ * Pratt parser: tokens -> AST, with Excel's operator precedence
+ * (tightest to loosest):
+ *
+ *   : (range) > unary -/+ > % (postfix) > ^ > * / > + - > & > comparisons
+ *
+ * Notable Excel semantics encoded here: `-2^2` is `(-2)^2 = 4` (unary minus
+ * binds tighter than `^`), and `^` is left-associative (`2^3^2 = 64`).
+ *
+ * Parsing is error-tolerant: invalid formulas yield a PARSE_ERROR node that
+ * evaluates to #ERROR! instead of throwing (like a spreadsheet storing a
+ * broken formula).
+ */
+
+import { CellError, CellErrorType } from '../value/types';
+import { DEFAULT_CONFIG, type EngineConfig } from '../config/types';
+import { FormulaSyntaxError, errorLiteralToType, tokenize } from '../lexer/lexer';
+import { TokenType, type Token } from '../lexer/tokens';
+import { parseCellReference } from '../reference/addressing';
+import type { Ast, BinaryOperator } from '../ast/nodes';
+
+const BINARY_BINDING_POWER: Partial<Record<TokenType, number>> = {
+  [TokenType.OP_EQ]: 2,
+  [TokenType.OP_NEQ]: 2,
+  [TokenType.OP_LT]: 2,
+  [TokenType.OP_GT]: 2,
+  [TokenType.OP_LTE]: 2,
+  [TokenType.OP_GTE]: 2,
+  [TokenType.OP_CONCAT]: 3,
+  [TokenType.OP_PLUS]: 4,
+  [TokenType.OP_MINUS]: 4,
+  [TokenType.OP_MULT]: 5,
+  [TokenType.OP_DIV]: 5,
+  [TokenType.OP_POW]: 6,
+};
+const PERCENT_BINDING_POWER = 7;
+const UNARY_BINDING_POWER = 8;
+const RANGE_BINDING_POWER = 9;
+
+class Parser {
+  private pos = 0;
+
+  constructor(
+    private readonly tokens: Token[],
+    private readonly config: EngineConfig,
+  ) {}
+
+  private peek(): Token {
+    return this.tokens[this.pos]!;
+  }
+
+  private advance(): Token {
+    return this.tokens[this.pos++]!;
+  }
+
+  expect(type: TokenType): Token {
+    const token = this.peek();
+    if (token.type !== type) {
+      throw new FormulaSyntaxError(
+        token.type === TokenType.END
+          ? 'Unexpected end of formula'
+          : `Unexpected "${token.text}" at position ${token.start}`,
+      );
+    }
+    return this.advance();
+  }
+
+  parseExpression(minBindingPower: number): Ast {
+    let left = this.parsePrefix();
+
+    for (;;) {
+      const token = this.peek();
+
+      const binaryPower = BINARY_BINDING_POWER[token.type];
+      if (binaryPower !== undefined && binaryPower > minBindingPower) {
+        this.advance();
+        // Left-associative: the right side stops at operators of equal power.
+        const right = this.parseExpression(binaryPower);
+        left = { type: 'BINARY_OP', op: token.text as BinaryOperator, left, right };
+        continue;
+      }
+
+      if (token.type === TokenType.OP_PERCENT && PERCENT_BINDING_POWER > minBindingPower) {
+        this.advance();
+        left = { type: 'UNARY_OP', op: '%', operand: left };
+        continue;
+      }
+
+      if (token.type === TokenType.RANGE_OP && RANGE_BINDING_POWER > minBindingPower) {
+        this.advance();
+        const right = this.parseExpression(RANGE_BINDING_POWER);
+        if (left.type !== 'CELL_REFERENCE' || right.type !== 'CELL_REFERENCE') {
+          throw new FormulaSyntaxError('Range operator ":" requires cell references on both sides');
+        }
+        left = { type: 'RANGE_REFERENCE', start: left.reference, end: right.reference };
+        continue;
+      }
+
+      return left;
+    }
+  }
+
+  private parsePrefix(): Ast {
+    const token = this.advance();
+    switch (token.type) {
+      case TokenType.NUMBER:
+        return { type: 'NUMBER', value: this.parseNumber(token.text) };
+      case TokenType.STRING:
+        return { type: 'STRING', value: token.text.slice(1, -1).replace(/""/g, '"') };
+      case TokenType.BOOLEAN:
+        return { type: 'BOOLEAN', value: token.text.toUpperCase() === 'TRUE' };
+      case TokenType.ERROR_LITERAL:
+        return { type: 'ERROR', error: new CellError(errorLiteralToType(token.text)) };
+      case TokenType.CELL_REF: {
+        const reference = parseCellReference(token.text);
+        if (!reference) {
+          throw new FormulaSyntaxError(`Invalid cell reference "${token.text}"`);
+        }
+        return { type: 'CELL_REFERENCE', reference };
+      }
+      case TokenType.NAMED_EXPR:
+        return { type: 'NAMED_EXPRESSION', name: token.text };
+      case TokenType.FUNCTION_NAME:
+        return this.parseFunctionCall(token.text.toUpperCase());
+      case TokenType.LPAREN: {
+        const inner = this.parseExpression(0);
+        this.expect(TokenType.RPAREN);
+        return inner;
+      }
+      case TokenType.OP_MINUS:
+        return { type: 'UNARY_OP', op: '-', operand: this.parseExpression(UNARY_BINDING_POWER) };
+      case TokenType.OP_PLUS:
+        return { type: 'UNARY_OP', op: '+', operand: this.parseExpression(UNARY_BINDING_POWER) };
+      case TokenType.ARRAY_OPEN:
+        throw new FormulaSyntaxError('Array literals are not supported yet (phase 3)');
+      case TokenType.END:
+        throw new FormulaSyntaxError('Unexpected end of formula');
+      default:
+        throw new FormulaSyntaxError(`Unexpected "${token.text}" at position ${token.start}`);
+    }
+  }
+
+  private parseFunctionCall(name: string): Ast {
+    this.expect(TokenType.LPAREN);
+    const args: Ast[] = [];
+    if (this.peek().type !== TokenType.RPAREN) {
+      for (;;) {
+        const next = this.peek().type;
+        if (next === TokenType.ARG_SEP || next === TokenType.RPAREN) {
+          args.push({ type: 'EMPTY_ARG' }); // omitted argument: =IF(A1,,2)
+        } else {
+          args.push(this.parseExpression(0));
+        }
+        if (this.peek().type === TokenType.ARG_SEP) {
+          this.advance();
+          continue;
+        }
+        break;
+      }
+    }
+    this.expect(TokenType.RPAREN);
+    return { type: 'FUNCTION_CALL', name, args };
+  }
+
+  private parseNumber(text: string): number {
+    return Number(
+      this.config.decimalSeparator === '.' ? text : text.replace(this.config.decimalSeparator, '.'),
+    );
+  }
+}
+
+/**
+ * Parses a formula (with or without the leading "=") into an AST.
+ * Never throws on bad input: returns a PARSE_ERROR node instead.
+ */
+export function parseFormula(formula: string, config: EngineConfig = DEFAULT_CONFIG): Ast {
+  try {
+    const body = formula.startsWith('=') ? formula.slice(1) : formula;
+    const parser = new Parser(tokenize(body, config), config);
+    const ast = parser.parseExpression(0);
+    parser.expect(TokenType.END);
+    return ast;
+  } catch (error) {
+    if (error instanceof FormulaSyntaxError) {
+      return { type: 'PARSE_ERROR', error: new CellError(CellErrorType.ERROR, error.message) };
+    }
+    throw error;
+  }
+}

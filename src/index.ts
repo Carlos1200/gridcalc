@@ -25,3 +25,31 @@ export {
   type SimpleTime,
 } from './value/dates';
 export { buildConfig, DEFAULT_CONFIG, type EngineConfig } from './config/types';
+export {
+  colLetterToIndex,
+  formatCellReference,
+  indexToColLetter,
+  parseCellReference,
+} from './reference/addressing';
+export type { CellReference, RangeReference, SimpleCellAddress } from './reference/types';
+export { FormulaSyntaxError, tokenize } from './lexer/lexer';
+export { TokenType, type Token } from './lexer/tokens';
+export { parseFormula } from './parser/parser';
+export type {
+  ArrayLiteralAst,
+  Ast,
+  BinaryOpAst,
+  BinaryOperator,
+  BooleanLiteral,
+  CellReferenceAst,
+  EmptyArgAst,
+  ErrorLiteral,
+  FunctionCallAst,
+  NamedExpressionAst,
+  NumberLiteral,
+  ParseErrorAst,
+  RangeReferenceAst,
+  StringLiteral,
+  UnaryOpAst,
+  UnaryOperator,
+} from './ast/nodes';
