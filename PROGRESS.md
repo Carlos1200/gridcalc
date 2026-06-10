@@ -25,7 +25,7 @@
 - [x] `generate-fixtures.ts` probado y funcionando contra LibreOffice 26.2.4.2 (2026-06-10). Fixes que necesitó: declarar `xmlns:of` (sin él todo era Err:510), refs ODF `[.A1]` vía el lexer propio, booleanos como `TRUE()`, `IFS`/`CONCAT` como `COM.MICROSOFT.*`, soporte de `inputs` (un .fods por fixture, una sola invocación de soffice), campo `expected` manual para divergencias LO/Excel
 - [ ] CI (GitHub Actions) cuando haya remoto
 
-## Fase 1 — MVP núcleo (single sheet) 🔶 EN CURSO
+## Fase 1 — MVP núcleo (single sheet) ✅ COMPLETA (2026-06-10)
 
 - [x] `value/types.ts` — `CellError`, `CellErrorType`, `EmptyValue` (símbolo ≠ 0 ≠ ""), `ScalarValue`, `InterpreterValue`
 - [x] `value/coercion.ts` — reglas Excel: booleanos→1/0, texto numérico (científica y `%`), `""`→`#VALUE!` pero celda vacía→0, propagación de errores
@@ -62,9 +62,9 @@
   - Resultado vacío de fórmula se materializa a 0 (`=A1` con A1 vacía); `-0` se normaliza a 0 (Excel no tiene cero negativo)
   - Ciclos: `#CIRCULAR!` asignado antes de evaluar el resto del plan, dependientes lo propagan; al romper el ciclo se recuperan los valores
 - [x] Reemplazar el evaluador placeholder del harness golden (`tests/golden/harness.ts` → `evaluateFixture`) por el Engine real (fórmula en ZZ10000, inputs vía `setCellContents`)
-- [ ] Capa de redondeo compatible con Excel (`precisionRounding`) — riesgo #1 de la spec §19
-- [ ] Ejemplo en README: crear motor, `=SUM(A1:A3)`, editar A1, ver recálculo
-- [ ] **Criterio de fase:** golden tests de las 40 funciones pasan; editar una celda recalcula solo dependientes; ciclos → `#CIRCULAR`
+- [x] Capa de redondeo compatible con Excel (`precisionRounding`): el resultado de `+`/`-` se ajusta a N dígitos significativos (`=0.1+0.2=0.3` → TRUE); multiplicación/división NO se ajustan, como Excel. Verificado con golden contra LibreOffice
+- [x] Ejemplo en README: crear motor, `=SUM(A1:A3)`, editar A1, ver recálculo (ejecutado y verificado, salida real)
+- [x] **Criterio de fase:** golden tests de las 40 funciones pasan (338 tests, 209 fixtures golden); editar una celda recalcula solo dependientes (test con contador de evaluaciones); ciclos → `#CIRCULAR!` con recuperación al romperlos
 
 ## Fase 2 — Multi-hoja y expansión ⬜ PENDIENTE
 

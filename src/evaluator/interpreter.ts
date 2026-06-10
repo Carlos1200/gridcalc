@@ -143,7 +143,7 @@ function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInte
     case '*':
     case '/':
     case '^':
-      return arithmetic(ast.op, left, right);
+      return arithmetic(ast.op, left, right, context.config.precisionRounding);
     case '&': {
       const l = coerceToString(left);
       if (l instanceof CellError) {
@@ -177,10 +177,20 @@ function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInte
   }
 }
 
+/**
+ * Excel hides binary float noise in additions and subtractions (=0.1+0.2=0.3
+ * is TRUE) by snapping the result to `precisionRounding` significant digits.
+ * Multiplication and division results are NOT snapped, also like Excel.
+ */
+function smartRound(value: number, significantDigits: number): number {
+  return value === 0 ? 0 : Number(value.toPrecision(significantDigits));
+}
+
 function arithmetic(
   op: '+' | '-' | '*' | '/' | '^',
   left: RawScalarValue,
   right: RawScalarValue,
+  precisionRounding: number,
 ): number | CellError {
   const l = coerceToNumber(left);
   if (l instanceof CellError) {
@@ -193,10 +203,10 @@ function arithmetic(
   let result: number;
   switch (op) {
     case '+':
-      result = l + r;
+      result = smartRound(l + r, precisionRounding);
       break;
     case '-':
-      result = l - r;
+      result = smartRound(l - r, precisionRounding);
       break;
     case '*':
       result = l * r;

@@ -198,5 +198,17 @@
   {
     "formula": "=INT(1/0)",
     "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=0.1+0.2=0.3",
+    "expected": true
+  },
+  {
+    "formula": "=(0.1+0.2)-0.3",
+    "expected": 0
+  },
+  {
+    "formula": "=4.1-4.2+0.1",
+    "expected": -5.27355936696949e-16
   }
 ]

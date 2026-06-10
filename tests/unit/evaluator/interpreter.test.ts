@@ -91,6 +91,14 @@ describe('arithmetic operators', () => {
     expect(display(evaluate('="abc"+1'))).toBe('#VALUE!');
   });
 
+  it('snaps +/- results to precisionRounding digits, like Excel', () => {
+    expect(evaluate('=0.1+0.2')).toBe(0.3); // exactly, not 0.30000000000000004
+    expect(evaluate('=0.1+0.2=0.3')).toBe(true);
+    expect(evaluate('=(0.1+0.2)-0.3')).toBe(0);
+    // Multiplication is NOT snapped (Excel only fixes up additive noise).
+    expect(evaluate('=0.1*3=0.3')).toBe(false);
+  });
+
   it('returns #DIV/0! and #NUM! on the right edge cases', () => {
     expect(display(evaluate('=1/0'))).toBe('#DIV/0!');
     expect(display(evaluate('=0^0'))).toBe('#NUM!');
