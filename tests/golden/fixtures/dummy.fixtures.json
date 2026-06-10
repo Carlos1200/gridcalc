@@ -1,0 +1,5 @@
+[
+  { "formula": "42", "expected": 42 },
+  { "formula": "-3.5", "expected": -3.5 },
+  { "formula": "hello", "expected": "hello" }
+]
