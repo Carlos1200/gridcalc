@@ -4,6 +4,8 @@ export enum TokenType {
   BOOLEAN = 'BOOLEAN',
   ERROR_LITERAL = 'ERROR_LITERAL',
   CELL_REF = 'CELL_REF',
+  /** Sheet qualifier before a reference: `Sheet2!` or `'My Sheet'!` (text excludes the `!`). */
+  SHEET_NAME = 'SHEET_NAME',
   FUNCTION_NAME = 'FUNCTION_NAME',
   NAMED_EXPR = 'NAMED_EXPR',
   RANGE_OP = 'RANGE_OP',

@@ -37,12 +37,18 @@ const PERCENT_BINDING_POWER = 7;
 const UNARY_BINDING_POWER = 8;
 const RANGE_BINDING_POWER = 9;
 
+/** Resolves a sheet name (case-insensitive) to its index; undefined = unknown. */
+export type SheetLookup = (name: string) => number | undefined;
+
+const NO_SHEETS: SheetLookup = () => undefined;
+
 class Parser {
   private pos = 0;
 
   constructor(
     private readonly tokens: Token[],
     private readonly config: EngineConfig,
+    private readonly sheetLookup: SheetLookup,
   ) {}
 
   private peek(): Token {
@@ -89,10 +95,26 @@ class Parser {
       if (token.type === TokenType.RANGE_OP && RANGE_BINDING_POWER > minBindingPower) {
         this.advance();
         const right = this.parseExpression(RANGE_BINDING_POWER);
+        // A side that resolved to #REF! (unknown sheet) poisons the range.
+        if (left.type === 'ERROR' && left.error.type === CellErrorType.REF) {
+          continue;
+        }
+        if (right.type === 'ERROR' && right.error.type === CellErrorType.REF) {
+          left = right;
+          continue;
+        }
         if (left.type !== 'CELL_REFERENCE' || right.type !== 'CELL_REFERENCE') {
           throw new FormulaSyntaxError('Range operator ":" requires cell references on both sides');
         }
-        left = { type: 'RANGE_REFERENCE', start: left.reference, end: right.reference };
+        const start = left.reference;
+        let end = right.reference;
+        if (start.sheet !== undefined && end.sheet === undefined) {
+          end = { ...end, sheet: start.sheet }; // Sheet2!A1:B2 lives entirely on Sheet2
+        }
+        if (start.sheet !== end.sheet) {
+          throw new FormulaSyntaxError('3D ranges across sheets are not supported');
+        }
+        left = { type: 'RANGE_REFERENCE', start, end };
         continue;
       }
 
@@ -117,6 +139,23 @@ class Parser {
           throw new FormulaSyntaxError(`Invalid cell reference "${token.text}"`);
         }
         return { type: 'CELL_REFERENCE', reference };
+      }
+      case TokenType.SHEET_NAME: {
+        const name = token.text.startsWith("'")
+          ? token.text.slice(1, -1).replace(/''/g, "'")
+          : token.text;
+        const refToken = this.expect(TokenType.CELL_REF);
+        const reference = parseCellReference(refToken.text);
+        if (!reference) {
+          throw new FormulaSyntaxError(`Invalid cell reference "${refToken.text}"`);
+        }
+        const sheet = this.sheetLookup(name);
+        if (sheet === undefined) {
+          // Like Excel after a sheet disappears: the reference is #REF! and
+          // stays that way even if a sheet with that name is created later.
+          return { type: 'ERROR', error: new CellError(CellErrorType.REF, `Unknown sheet "${name}"`) };
+        }
+        return { type: 'CELL_REFERENCE', reference: { ...reference, sheet } };
       }
       case TokenType.NAMED_EXPR:
         return { type: 'NAMED_EXPRESSION', name: token.text };
@@ -173,10 +212,14 @@ class Parser {
  * Parses a formula (with or without the leading "=") into an AST.
  * Never throws on bad input: returns a PARSE_ERROR node instead.
  */
-export function parseFormula(formula: string, config: EngineConfig = DEFAULT_CONFIG): Ast {
+export function parseFormula(
+  formula: string,
+  config: EngineConfig = DEFAULT_CONFIG,
+  sheetLookup: SheetLookup = NO_SHEETS,
+): Ast {
   try {
     const body = formula.startsWith('=') ? formula.slice(1) : formula;
-    const parser = new Parser(tokenize(body, config), config);
+    const parser = new Parser(tokenize(body, config), config, sheetLookup);
     const ast = parser.parseExpression(0);
     parser.expect(TokenType.END);
     return ast;

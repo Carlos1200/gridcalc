@@ -66,14 +66,20 @@
 - [x] Ejemplo en README: crear motor, `=SUM(A1:A3)`, editar A1, ver recálculo (ejecutado y verificado, salida real)
 - [x] **Criterio de fase:** golden tests de las 40 funciones pasan (338 tests, 209 fixtures golden); editar una celda recalcula solo dependientes (test con contador de evaluaciones); ciclos → `#CIRCULAR!` con recuperación al romperlos
 
-## Fase 2 — Multi-hoja y expansión ⬜ PENDIENTE
+## Fase 2 — Multi-hoja y expansión 🔶 EN CURSO
 
-- [ ] Cross-sheet refs (`Sheet2!A1`, `'Mi Hoja'!A1:B2`)
-- [ ] Named expressions (`=IVA`) — el parser ya produce `NamedExpressionAst`
+- [x] Cross-sheet refs (`Sheet2!A1`, `'Mi Hoja'!A1:B2`, escape `''` para comillas)
+  - Token `SHEET_NAME` en el lexer (identificador o nombre entrecomillado seguido de `!`)
+  - El parser resuelve nombre→id vía `SheetLookup` (case-insensitive); hoja desconocida → literal `#REF!` **pegajoso** (no se recupera al crear la hoja después; hay que reescribir la fórmula, como Excel); rangos 3D entre hojas distintas → PARSE_ERROR
+  - El sheet de `Sheet2!A1:B2` aplica al rango entero
+- [x] `addSheet`/`removeSheet`/`getSheetNames` (+ `getSheetId`)
+  - Ids de hoja **estables** (slot nunca se reutiliza): eliminar una hoja no desplaza los índices de las demás
+  - `removeSheet` borra celdas, recalcula dependientes externos → leen `#REF!`; re-crear una hoja con el mismo nombre NO resucita referencias viejas
+  - `buildEmpty()` arranca con `Sheet1`; nombres auto `SheetN` evitan colisiones
+- [ ] **Named expressions (`=IVA`) + `addNamedExpression`** ← SIGUIENTE PASO (el parser ya produce `NamedExpressionAst`)
 - [ ] Ajuste de referencias al copiar/mover (los flags absolute ya se guardan)
 - [ ] Traducción de nombres de función (`=SUMA(...)` → SUM) en `i18n/` — separadores ya soportados
 - [ ] Subir a ~150 funciones
-- [ ] `addSheet`/`removeSheet`/`getSheetNames`, `addNamedExpression`
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

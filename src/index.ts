@@ -59,7 +59,7 @@ export {
 } from './functions/types';
 export { FormulaSyntaxError, tokenize } from './lexer/lexer';
 export { TokenType, type Token } from './lexer/tokens';
-export { parseFormula } from './parser/parser';
+export { parseFormula, type SheetLookup } from './parser/parser';
 export type {
   ArrayLiteralAst,
   Ast,

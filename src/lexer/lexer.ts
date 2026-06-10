@@ -133,13 +133,44 @@ export function tokenize(input: string, config: EngineConfig = DEFAULT_CONFIG): 
       continue;
     }
 
-    // Identifier: cell ref, function name, boolean, or named expression.
+    // Quoted sheet name: 'My Sheet'!A1, with '' escaping a quote.
+    if (ch === "'") {
+      i++;
+      for (;;) {
+        if (i >= input.length) {
+          throw new FormulaSyntaxError('Unterminated sheet name');
+        }
+        if (input[i] === "'") {
+          if (input[i + 1] === "'") {
+            i += 2;
+            continue;
+          }
+          i++;
+          break;
+        }
+        i++;
+      }
+      if (input[i] !== '!') {
+        throw new FormulaSyntaxError(`Expected "!" after sheet name at position ${i}`);
+      }
+      push(TokenType.SHEET_NAME, start); // text keeps the quotes; the parser unescapes
+      i++; // consume the "!"
+      continue;
+    }
+
+    // Identifier: cell ref, function name, boolean, named expression, or an
+    // unquoted sheet name when "!" follows immediately (Sheet2!A1).
     // A "(" after the word wins: LOG10 is a valid cell address (column LOG,
     // row 10), but LOG10(...) is the function — same disambiguation as Excel.
     if (isIdentStart(ch)) {
       i++;
       while (i < input.length && isIdentChar(input[i]!)) i++;
       const text = input.slice(start, i);
+      if (input[i] === '!') {
+        tokens.push({ type: TokenType.SHEET_NAME, text, start });
+        i++; // consume the "!"
+        continue;
+      }
       let j = i;
       while (j < input.length && isWhitespace(input[j]!)) j++;
       let type: TokenType;

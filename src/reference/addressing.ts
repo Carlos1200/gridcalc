@@ -7,6 +7,12 @@ export function cellAddressKey(address: SimpleCellAddress): string {
   return `${address.sheet}:${address.col}:${address.row}`;
 }
 
+/** Inverse of `cellAddressKey`. */
+export function cellAddressFromKey(key: string): SimpleCellAddress {
+  const [sheet, col, row] = key.split(':');
+  return { sheet: Number(sheet), col: Number(col), row: Number(row) };
+}
+
 /** `A` -> 0, `Z` -> 25, `AA` -> 26 (bijective base 26). */
 export function colLetterToIndex(letters: string): number {
   let result = 0;

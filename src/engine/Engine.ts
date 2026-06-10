@@ -13,7 +13,7 @@ import { evaluateAst } from '../evaluator/interpreter';
 import { buildDefaultRegistry } from '../functions/index';
 import type { FunctionRegistry } from '../functions/registry';
 import { parseFormula } from '../parser/parser';
-import { cellAddressKey } from '../reference/addressing';
+import { cellAddressFromKey, cellAddressKey } from '../reference/addressing';
 import type { SimpleCellAddress, SimpleCellRange } from '../reference/types';
 import { parseNumericString } from '../value/coercion';
 import {
@@ -46,6 +46,12 @@ export class Engine {
 
   private readonly cells = new Map<string, Cell>();
   private readonly graph = new DependencyGraph();
+  /**
+   * Slot index = stable sheet id (never reused). A removed sheet leaves an
+   * undefined hole so references to other sheets keep working, and formulas
+   * that pointed into the removed sheet read #REF! forever, like Excel.
+   */
+  private readonly sheets: (string | undefined)[] = ['Sheet1'];
   /** Set while inside batch(): accumulates work instead of recalculating. */
   private pending: { seeds: SimpleCellAddress[]; direct: ChangedCell[] } | undefined;
 
@@ -58,11 +64,67 @@ export class Engine {
     return new Engine(config);
   }
 
+  /** Live sheet names, in creation order. */
+  getSheetNames(): string[] {
+    return this.sheets.filter((name): name is string => name !== undefined);
+  }
+
+  /** The sheet's stable id, matched case-insensitively like Excel. */
+  getSheetId(name: string): number | undefined {
+    const lower = name.toLowerCase();
+    const id = this.sheets.findIndex((existing) => existing?.toLowerCase() === lower);
+    return id === -1 ? undefined : id;
+  }
+
+  /** Adds a sheet (auto-named "SheetN" if no name given) and returns its id. */
+  addSheet(name?: string): number {
+    let sheetName = name;
+    if (sheetName === undefined) {
+      let n = this.sheets.length + 1;
+      while (this.getSheetId(`Sheet${n}`) !== undefined) {
+        n++;
+      }
+      sheetName = `Sheet${n}`;
+    } else if (this.getSheetId(sheetName) !== undefined) {
+      throw new Error(`Sheet "${sheetName}" already exists`);
+    }
+    this.sheets.push(sheetName);
+    return this.sheets.length - 1;
+  }
+
+  /**
+   * Removes a sheet and all its cells. Formulas elsewhere that referenced it
+   * recalculate to #REF! and are reported in the returned changes.
+   */
+  removeSheet(sheet: number): ChangedCell[] {
+    this.assertSheet(sheet);
+    if (this.pending) {
+      throw new Error('removeSheet() inside batch() is not supported');
+    }
+    const seeds = this.graph.precedentsInSheet(sheet);
+    for (const key of [...this.cells.keys()]) {
+      const address = cellAddressFromKey(key);
+      if (address.sheet === sheet) {
+        this.graph.removeFormula(address);
+        this.cells.delete(key);
+      }
+    }
+    this.sheets[sheet] = undefined;
+    return this.recalculate(seeds);
+  }
+
+  private assertSheet(sheet: number): void {
+    if (this.sheets[sheet] === undefined) {
+      throw new Error(`Sheet ${sheet} does not exist`);
+    }
+  }
+
   /**
    * Sets a cell's content (formula, value, or null/"" to clear) and
    * recalculates its dependents. Returns every cell whose value changed.
    */
   setCellContents(address: SimpleCellAddress, content: RawCellContent): ChangedCell[] {
+    this.assertSheet(address.sheet);
     const direct = this.applyContent(address, content);
     if (this.pending) {
       this.pending.seeds.push(address);
@@ -125,7 +187,7 @@ export class Engine {
     }
 
     if (typeof content === 'string' && content.startsWith('=')) {
-      const ast = parseFormula(content, this.config);
+      const ast = parseFormula(content, this.config, (name) => this.getSheetId(name));
       this.cells.set(key, { kind: 'formula', formula: content, ast, value: null });
       this.graph.setFormula(address, extractDependencies(ast, address));
       // Recalculation reports the new value.
@@ -184,6 +246,9 @@ export class Engine {
   }
 
   private rawCellValue(address: SimpleCellAddress): RawScalarValue {
+    if (this.sheets[address.sheet] === undefined) {
+      return new CellError(CellErrorType.REF, 'Reference to a removed sheet');
+    }
     const cell = this.cells.get(cellAddressKey(address));
     if (!cell) {
       return EmptyValue;

@@ -7,7 +7,7 @@
  * dedicated range nodes (HyperFormula-style) are an optimization for later.
  */
 
-import { cellAddressKey } from '../reference/addressing';
+import { cellAddressFromKey, cellAddressKey } from '../reference/addressing';
 import type { SimpleCellAddress } from '../reference/types';
 import type { FormulaDependencies } from './extract';
 
@@ -27,10 +27,7 @@ export interface RecalculationPlan {
   cyclic: SimpleCellAddress[];
 }
 
-function addressOf(key: string): SimpleCellAddress {
-  const [sheet, col, row] = key.split(':');
-  return { sheet: Number(sheet), col: Number(col), row: Number(row) };
-}
+const addressOf = cellAddressFromKey;
 
 export class DependencyGraph {
   /** formula cell -> cells it reads. */
@@ -95,6 +92,21 @@ export class DependencyGraph {
   getDependents(address: SimpleCellAddress): SimpleCellAddress[] {
     const set = this.dependents.get(cellAddressKey(address));
     return set ? [...set].map(addressOf) : [];
+  }
+
+  /**
+   * Cells of `sheet` that at least one formula reads. Used as recalculation
+   * seeds when the sheet is removed (its readers must turn into #REF!).
+   */
+  precedentsInSheet(sheet: number): SimpleCellAddress[] {
+    const result: SimpleCellAddress[] = [];
+    for (const key of this.dependents.keys()) {
+      const address = addressOf(key);
+      if (address.sheet === sheet) {
+        result.push(address);
+      }
+    }
+    return result;
   }
 
   /**
