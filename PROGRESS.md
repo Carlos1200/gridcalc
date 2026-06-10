@@ -41,9 +41,13 @@
   - [x] Recálculo incremental: `getRecalculationPlan(changed)` → `{ order, cyclic }`; dirty = clausura de dependientes; celdas en ciclo → el engine les asignará `#CIRCULAR!` y sus dependientes lo propagan como valor
   - [x] Flag de volátiles (`VOLATILE_FUNCTIONS`: NOW, TODAY, RAND, RANDBETWEEN, OFFSET, INDIRECT) detectado en el AST; las volátiles entran en todo plan
   - Nota: los rangos se expanden a aristas por celda al registrar la fórmula (suficiente para Fase 1; nodos-rango estilo HyperFormula quedan como optimización futura)
-- [ ] **`evaluator/` — recorrido del AST, `EvaluationContext`, resolución de referencias, operadores binarios/unarios con coerciones, propagación de errores** ← SIGUIENTE PASO
-- [ ] `functions/registry.ts` — registro central, metadata (`minArgs`/`maxArgs`/`volatile`/`argHandling`)
-- [ ] **~40 funciones de Fase 1, cada una con golden tests:**
+- [x] `evaluator/` — `evaluateAst` + `EvaluationContext` (`getCellValue`/`getRangeValues` devuelven `RawScalarValue`, con `EmptyValue`)
+  - Operadores con coerciones Excel: aritmética (`/0`→`#DIV/0!`, `0^0` y NaN/overflow→`#NUM!`), `&`, comparaciones sin coerción cruzada (number < text < logical, texto case-insensitive, vacío adopta el tipo del otro lado), `%` postfijo, `+` unario no-op (incluso sobre texto)
+  - Propagación de errores: operandos izquierda-primero; error real gana a fallo de coerción; rango en contexto escalar → `#VALUE!` (sin intersección implícita en Fase 1)
+  - Las funciones reciben args crudos (eager) o ASTs (lazy para IF/IFERROR/AND/OR con cortocircuito); cada función hace sus propias coerciones
+- [x] `functions/registry.ts` — `FunctionRegistry` por motor (case-insensitive, duplicados lanzan), metadata (`minArgs`/`maxArgs`/`volatile`/`argHandling: scalar|range-aware|lazy`); arity inválida → `#N/A`, función desconocida → `#NAME?`
+  - Pendiente: unificar `VOLATILE_FUNCTIONS` (hoy set estático en `dependency/extract.ts`) con el flag `volatile` del registro cuando existan las funciones
+- [ ] **~40 funciones de Fase 1, cada una con golden tests:** ← SIGUIENTE PASO
   - [ ] math: SUM, ROUND, ROUNDUP, ROUNDDOWN, ABS, SQRT, POWER, MOD, INT
   - [ ] statistical: AVERAGE, COUNT, COUNTA, MIN, MAX, SUMIF, COUNTIF
   - [ ] logical: IF, IFS, AND, OR, NOT, IFERROR

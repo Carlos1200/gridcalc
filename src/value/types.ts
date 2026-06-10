@@ -61,3 +61,10 @@ export type EmptyValueType = typeof EmptyValue;
 
 /** Scalar as seen by coercion: includes the empty-cell marker. */
 export type RawScalarValue = ScalarValue | EmptyValueType;
+
+/**
+ * Value domain during evaluation: scalars, the empty-cell marker, or 2D
+ * arrays (a range reference evaluates to one). The engine materializes the
+ * final result into an `InterpreterValue` (e.g. top-level empty -> 0).
+ */
+export type RawInterpreterValue = RawScalarValue | RawInterpreterValue[][];

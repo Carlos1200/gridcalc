@@ -5,6 +5,7 @@ export {
   isCellError,
   type EmptyValueType,
   type InterpreterValue,
+  type RawInterpreterValue,
   type RawScalarValue,
   type ScalarValue,
 } from './value/types';
@@ -43,6 +44,16 @@ export {
   type FormulaDependencies,
 } from './dependency/extract';
 export { DependencyGraph, type RecalculationPlan } from './dependency/graph';
+export type { EvaluationContext } from './evaluator/context';
+export { evaluateAst } from './evaluator/interpreter';
+export { FunctionRegistry } from './functions/registry';
+export {
+  isLazyFunction,
+  type EagerFunction,
+  type FunctionMetadata,
+  type LazyFunction,
+  type RegisteredFunction,
+} from './functions/types';
 export { FormulaSyntaxError, tokenize } from './lexer/lexer';
 export { TokenType, type Token } from './lexer/tokens';
 export { parseFormula } from './parser/parser';
