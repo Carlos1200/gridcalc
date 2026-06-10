@@ -84,8 +84,9 @@
   - `ast/serialize.ts`: serializador AST→fórmula con paréntesis mínimos por precedencia (round-trip garantizado por tests), prefijos de hoja con quoting solo cuando hace falta, separadores de locale
   - `adjustReferences`: desplaza partes relativas, respeta `$`, fuera de la cuadrícula → `#REF!`; valores se copian tal cual; fórmulas rotas (PARSE_ERROR) se copian verbatim
   - "Mover" (cut/paste con reescritura de referencias entrantes) queda pendiente para más adelante
-- [ ] Traducción de nombres de función (`=SUMA(...)` → SUM) en `i18n/` — separadores ya soportados
-- [ ] Subir a ~150 funciones
+- [x] Traducción de nombres de función en `i18n/`: las 40 funciones con nombres es-ES (`=SUMA`→SUM, `=SI.ERROR`→IFERROR...). El AST siempre lleva el nombre canónico inglés; el parser traduce al entrar y el serializador (y por tanto `copyCell`) emite el localizado. Los nombres canónicos se aceptan en cualquier locale
+  - Pendiente de i18n: literales booleanos (`VERDADERO`/`FALSO`) y de error localizados
+- [ ] Subir a ~150 funciones ← SIGUIENTE PASO (PRODUCT, CEILING/FLOOR, SUMPRODUCT, COUNTIFS/SUMIFS/AVERAGEIF(S), familia IS*, fechas YEAR/MONTH/DAY/EDATE/EOMONTH/DATEDIF, texto SUBSTITUTE/REPLACE/FIND/SEARCH/REPT/TEXTJOIN, CHOOSE/LOOKUP...)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

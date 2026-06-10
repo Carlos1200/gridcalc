@@ -44,10 +44,10 @@ describe('serializeAst', () => {
     expect(serializeAst(ast, DEFAULT_CONFIG, names)).toBe("'Mi Hoja'!A1+Datos!B2");
   });
 
-  it('uses locale separators', () => {
+  it('uses locale separators and localized function names', () => {
     const es = buildConfig({ locale: 'es', argumentSeparator: ';', decimalSeparator: ',' });
     const ast = parseFormula('=SUM(1,5;2)', es);
-    expect(serializeAst(ast, es)).toBe('SUM(1,5;2)');
+    expect(serializeAst(ast, es)).toBe('SUMA(1,5;2)');
   });
 
   it('serializes references to removed sheets as #REF!', () => {

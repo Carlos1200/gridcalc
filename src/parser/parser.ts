@@ -16,6 +16,7 @@ import { CellError, CellErrorType } from '../value/types';
 import { DEFAULT_CONFIG, type EngineConfig } from '../config/types';
 import { FormulaSyntaxError, errorLiteralToType, tokenize } from '../lexer/lexer';
 import { TokenType, type Token } from '../lexer/tokens';
+import { toCanonicalName } from '../i18n/index';
 import { parseCellReference } from '../reference/addressing';
 import type { Ast, BinaryOperator } from '../ast/nodes';
 
@@ -160,7 +161,8 @@ class Parser {
       case TokenType.NAMED_EXPR:
         return { type: 'NAMED_EXPRESSION', name: token.text };
       case TokenType.FUNCTION_NAME:
-        return this.parseFunctionCall(token.text.toUpperCase());
+        // The AST always carries the canonical English name (=SUMA -> SUM).
+        return this.parseFunctionCall(toCanonicalName(token.text.toUpperCase(), this.config.locale));
       case TokenType.LPAREN: {
         const inner = this.parseExpression(0);
         this.expect(TokenType.RPAREN);

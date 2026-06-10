@@ -61,6 +61,7 @@ export { FormulaSyntaxError, tokenize } from './lexer/lexer';
 export { TokenType, type Token } from './lexer/tokens';
 export { parseFormula, type SheetLookup } from './parser/parser';
 export { adjustReferences, serializeAst, type SheetNameLookup } from './ast/serialize';
+export { toCanonicalName, toLocalizedName } from './i18n/index';
 export type {
   ArrayLiteralAst,
   Ast,

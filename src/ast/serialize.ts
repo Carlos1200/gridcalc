@@ -7,6 +7,7 @@
  */
 
 import { DEFAULT_CONFIG, type EngineConfig } from '../config/types';
+import { toLocalizedName } from '../i18n/index';
 import { formatCellReference, parseCellReference } from '../reference/addressing';
 import type { CellReference } from '../reference/types';
 import { CellError, CellErrorType } from '../value/types';
@@ -97,7 +98,7 @@ export function serializeAst(
     case 'NAMED_EXPRESSION':
       return ast.name;
     case 'FUNCTION_CALL':
-      return `${ast.name}(${ast.args
+      return `${toLocalizedName(ast.name, config.locale)}(${ast.args
         .map((arg) => (arg.type === 'EMPTY_ARG' ? '' : serializeAst(arg, config, sheetName)))
         .join(config.argumentSeparator)})`;
     case 'UNARY_OP':
