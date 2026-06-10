@@ -60,6 +60,7 @@ export {
 export { FormulaSyntaxError, tokenize } from './lexer/lexer';
 export { TokenType, type Token } from './lexer/tokens';
 export { parseFormula, type SheetLookup } from './parser/parser';
+export { adjustReferences, serializeAst, type SheetNameLookup } from './ast/serialize';
 export type {
   ArrayLiteralAst,
   Ast,

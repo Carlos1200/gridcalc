@@ -5,6 +5,7 @@
  */
 
 import type { Ast } from '../ast/nodes';
+import { adjustReferences, serializeAst } from '../ast/serialize';
 import { buildConfig, type EngineConfig } from '../config/types';
 import { extractDependencies } from '../dependency/extract';
 import { DependencyGraph } from '../dependency/graph';
@@ -226,6 +227,31 @@ export class Engine {
       changes = mergeChanges(pending.direct, this.recalculate(pending.seeds));
     }
     return changes;
+  }
+
+  /**
+   * Copies a cell like Excel's copy-paste: values copy as-is; in formulas,
+   * relative references shift by the offset while absolute parts ($) stay,
+   * and references pushed off the grid become #REF!. Copying an empty cell
+   * clears the target.
+   */
+  copyCell(source: SimpleCellAddress, target: SimpleCellAddress): ChangedCell[] {
+    this.assertSheet(source.sheet);
+    this.assertSheet(target.sheet);
+    const cell = this.cells.get(cellAddressKey(source));
+    if (!cell) {
+      return this.setCellContents(target, null);
+    }
+    if (cell.kind === 'value') {
+      return this.setCellContents(target, cell.value);
+    }
+    if (cell.ast.type === 'PARSE_ERROR') {
+      // Nothing to adjust in a formula that never parsed; copy it verbatim.
+      return this.setCellContents(target, cell.formula);
+    }
+    const adjusted = adjustReferences(cell.ast, target.row - source.row, target.col - source.col);
+    const formula = '=' + serializeAst(adjusted, this.config, (sheet) => this.sheets[sheet]);
+    return this.setCellContents(target, formula);
   }
 
   /** The cell's computed value; null for empty cells. */

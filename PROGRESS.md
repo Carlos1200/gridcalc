@@ -80,7 +80,10 @@
   - Cada nombre es una **celda virtual** en la hoja reservada `NAMES_SHEET = -1` (col 0, row = id estable): el grafo recalcula usuarios cuando cambian los precedentes del nombre, detecta ciclos a través de nombres, y definir un nombre repara los `#NAME?` previos (el id se asigna en la primera mención, aunque aún no exista)
   - Contenido como el de una celda (escalar o fórmula); las refs dentro de un nombre deben ir calificadas con hoja (`=Sheet1!$A$1*2`) o lanza
   - Nombres case-insensitive; inválidos (`A1`, `TRUE`, `2x`) lanzan
-- [ ] Ajuste de referencias al copiar/mover (los flags absolute ya se guardan)
+- [x] Ajuste de referencias al copiar: `Engine.copyCell(source, target)`
+  - `ast/serialize.ts`: serializador AST→fórmula con paréntesis mínimos por precedencia (round-trip garantizado por tests), prefijos de hoja con quoting solo cuando hace falta, separadores de locale
+  - `adjustReferences`: desplaza partes relativas, respeta `$`, fuera de la cuadrícula → `#REF!`; valores se copian tal cual; fórmulas rotas (PARSE_ERROR) se copian verbatim
+  - "Mover" (cut/paste con reescritura de referencias entrantes) queda pendiente para más adelante
 - [ ] Traducción de nombres de función (`=SUMA(...)` → SUM) en `i18n/` — separadores ya soportados
 - [ ] Subir a ~150 funciones
 

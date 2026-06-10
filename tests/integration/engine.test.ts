@@ -7,9 +7,9 @@ import {
   type SimpleCellAddress,
 } from '../../src/index';
 
-function addr(text: string): SimpleCellAddress {
+function addr(text: string, sheet = 0): SimpleCellAddress {
   const parsed = parseCellReference(text)!;
-  return { sheet: 0, col: parsed.col, row: parsed.row };
+  return { sheet, col: parsed.col, row: parsed.row };
 }
 
 function display(value: unknown): unknown {
@@ -209,6 +209,49 @@ describe('Engine batch', () => {
         engine.batch(() => undefined);
       }),
     ).toThrow(/nested/);
+  });
+});
+
+describe('Engine copyCell', () => {
+  it('fills down adjusting relative references, keeping absolute ones', () => {
+    const engine = Engine.buildEmpty();
+    engine.batch(() => {
+      engine.setCellContents(addr('A1'), 1);
+      engine.setCellContents(addr('A2'), 2);
+      engine.setCellContents(addr('B1'), 10);
+      engine.setCellContents(addr('C1'), '=A1+$B$1');
+    });
+    engine.copyCell(addr('C1'), addr('C2'));
+    expect(engine.getCellFormula(addr('C2'))).toBe('=A2+$B$1');
+    expect(engine.getCellValue(addr('C2'))).toBe(12);
+  });
+
+  it('copies values as-is and clears the target when copying an empty cell', () => {
+    const engine = Engine.buildEmpty();
+    engine.setCellContents(addr('A1'), 'hello');
+    engine.setCellContents(addr('B1'), 99);
+    engine.copyCell(addr('A1'), addr('B1'));
+    expect(engine.getCellValue(addr('B1'))).toBe('hello');
+    engine.copyCell(addr('Z9'), addr('B1')); // Z9 is empty
+    expect(engine.getCellValue(addr('B1'))).toBeNull();
+  });
+
+  it('turns references shifted off the grid into #REF!', () => {
+    const engine = Engine.buildEmpty();
+    engine.setCellContents(addr('B2'), '=A1');
+    engine.copyCell(addr('B2'), addr('B1'));
+    expect(engine.getCellFormula(addr('B1'))).toBe('=#REF!');
+    expect(display(engine.getCellValue(addr('B1')))).toBe('#REF!');
+  });
+
+  it('keeps explicit sheet qualifiers when copying', () => {
+    const engine = Engine.buildEmpty();
+    const datos = engine.addSheet('Datos');
+    engine.setCellContents(addr('A2', datos), 7);
+    engine.setCellContents(addr('B1'), '=Datos!A1+1');
+    engine.copyCell(addr('B1'), addr('B2'));
+    expect(engine.getCellFormula(addr('B2'))).toBe('=Datos!A2+1');
+    expect(engine.getCellValue(addr('B2'))).toBe(8);
   });
 });
 
