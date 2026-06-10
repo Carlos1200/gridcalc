@@ -24,7 +24,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests scripts",
-    "generate-fixtures": "node scripts/generate-fixtures.ts"
+    "generate-fixtures": "tsx scripts/generate-fixtures.ts"
   },
   "engines": {
     "node": ">=18"
@@ -33,6 +33,7 @@
     "@types/node": "^24.0.0",
     "eslint": "^9.0.0",
     "tsup": "^8.0.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^3.0.0"

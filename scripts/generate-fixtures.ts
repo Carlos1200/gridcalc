@@ -7,18 +7,34 @@
  * Usage:
  *   node scripts/generate-fixtures.ts <formulas.json> <output.fixtures.json>
  *
- * <formulas.json> is a JSON array of formula strings in Excel syntax, e.g.
- *   ["=SUM(1,2)", "=ROUND(2.5,0)", "=1/0"]
+ * <formulas.json> is a JSON array whose entries are either a formula string
+ * (self-contained) or an object with input cells:
+ *   "=SUM(1,2)"
+ *   { "formula": "=SUM(A1:A3)", "inputs": { "A1": 1, "A2": 2, "A3": 3 } }
  *
- * v0 limitations (grow as the suite grows):
- * - No `inputs` support yet: formulas must be self-contained (no cell refs).
- * - Excel -> ODF translation is naive: it swaps "," for ";" outside strings.
+ * Each fixture becomes its own one-sheet .fods document (inputs at their
+ * cells, the formula two rows below the last input in column A); a single
+ * LibreOffice invocation converts them all to CSV.
  */
 
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { parseCellReference, tokenize, TokenType, type Token } from '../src/index';
+
+type InputScalar = number | string | boolean;
+
+interface FixtureSpec {
+  formula: string;
+  inputs?: Record<string, InputScalar>;
+  /**
+   * Manual override for the rare cases where LibreOffice's result differs
+   * from Excel's (e.g. LibreOffice says Err:502 where Excel says #NUM!).
+   * Justify each use with a comment in the formulas list's pull request.
+   */
+  expected?: InputScalar;
+}
 
 const SOFFICE_CANDIDATES = [
   'soffice',
@@ -49,47 +65,117 @@ function xmlEscape(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Naive Excel -> ODF formula translation: "," becomes ";" outside strings. */
+/**
+ * Excel -> ODF formula translation using the project lexer: cell references
+ * get ODF brackets (A1 -> [.A1], A1:B2 -> [.A1:.B2]) and "," becomes ";".
+ */
 function toOdfFormula(formula: string): string {
+  const body = formula.startsWith('=') ? formula.slice(1) : formula;
+  const tokens: Token[] = tokenize(body);
   let result = '';
-  let inString = false;
-  for (const char of formula) {
-    if (char === '"') inString = !inString;
-    result += !inString && char === ',' ? ';' : char;
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]!;
+    if (token.type === TokenType.END) {
+      break;
+    }
+    if (
+      token.type === TokenType.CELL_REF &&
+      tokens[i + 1]?.type === TokenType.RANGE_OP &&
+      tokens[i + 2]?.type === TokenType.CELL_REF
+    ) {
+      result += `[.${token.text}:.${tokens[i + 2]!.text}]`;
+      i += 2;
+    } else if (token.type === TokenType.CELL_REF) {
+      result += `[.${token.text}]`;
+    } else if (token.type === TokenType.ARG_SEP) {
+      result += ';';
+    } else {
+      result += token.text;
+    }
   }
-  return `of:${result}`;
+  return `of:=${result}`;
 }
 
-function buildFods(formulas: string[]): string {
-  const rows = formulas
-    .map(
-      (formula) =>
-        `<table:table-row><table:table-cell table:formula="${xmlEscape(toOdfFormula(formula))}"/></table:table-row>`,
-    )
-    .join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>
+function inputCellXml(value: InputScalar): string {
+  switch (typeof value) {
+    case 'number':
+      return `<table:table-cell office:value-type="float" office:value="${value}"/>`;
+    case 'boolean':
+      return `<table:table-cell office:value-type="boolean" office:boolean-value="${value}"/>`;
+    case 'string':
+      return `<table:table-cell office:value-type="string"><text:p>${xmlEscape(value)}</text:p></table:table-cell>`;
+  }
+}
+
+/** Builds a one-sheet flat ODS; returns the XML and the formula's 1-based row. */
+function buildFods(spec: FixtureSpec): { xml: string; formulaRow: number } {
+  const grid = new Map<number, Map<number, string>>(); // row -> col -> cell xml
+  let maxRow = 0;
+  let maxCol = 0;
+  for (const [ref, value] of Object.entries(spec.inputs ?? {})) {
+    const parsed = parseCellReference(ref);
+    if (!parsed) {
+      throw new Error(`Invalid input cell reference "${ref}" for ${spec.formula}`);
+    }
+    if (!grid.has(parsed.row)) {
+      grid.set(parsed.row, new Map());
+    }
+    grid.get(parsed.row)!.set(parsed.col, inputCellXml(value));
+    maxRow = Math.max(maxRow, parsed.row);
+    maxCol = Math.max(maxCol, parsed.col);
+  }
+
+  const formulaRow = spec.inputs ? maxRow + 2 : 0; // 0-based; leaves one blank row
+  grid.set(
+    formulaRow,
+    new Map([[0, `<table:table-cell table:formula="${xmlEscape(toOdfFormula(spec.formula))}"/>`]]),
+  );
+
+  const rows: string[] = [];
+  for (let row = 0; row <= formulaRow; row++) {
+    const cells: string[] = [];
+    const rowCells = grid.get(row);
+    for (let col = 0; col <= Math.max(maxCol, 0); col++) {
+      cells.push(rowCells?.get(col) ?? '<table:table-cell/>');
+    }
+    rows.push(`<table:table-row>${cells.join('')}</table:table-row>`);
+  }
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
   xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+  xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2"
   office:version="1.2" office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
 <office:body><office:spreadsheet><table:table table:name="Sheet1">
-${rows}
+${rows.join('\n')}
 </table:table></office:spreadsheet></office:body></office:document>`;
+  return { xml, formulaRow: formulaRow + 1 };
 }
 
-/** Parses one-column LibreOffice CSV output into raw cell strings. */
-function parseCsvColumn(csv: string): string[] {
-  return csv
-    .replace(/\r\n/g, '\n')
-    .replace(/\n$/, '')
-    .split('\n')
-    .map((line) =>
-      line.startsWith('"') && line.endsWith('"')
-        ? line.slice(1, -1).replace(/""/g, '"')
-        : line,
-    );
+/** First CSV field of a line, unescaping quotes. */
+function firstCsvField(line: string): string {
+  if (!line.startsWith('"')) {
+    const comma = line.indexOf(',');
+    return comma === -1 ? line : line.slice(0, comma);
+  }
+  let field = '';
+  for (let i = 1; i < line.length; i++) {
+    if (line[i] === '"') {
+      if (line[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else {
+        break;
+      }
+    } else {
+      field += line[i];
+    }
+  }
+  return field;
 }
 
-function toFixtureValue(raw: string): number | string | boolean {
+function toFixtureValue(raw: string): InputScalar {
   if (raw === 'TRUE') return true;
   if (raw === 'FALSE') return false;
   const asNumber = Number(raw);
@@ -103,27 +189,47 @@ function main(): void {
     process.exit(1);
   }
 
-  const formulas = JSON.parse(readFileSync(inputPath, 'utf8')) as string[];
+  const entries = JSON.parse(readFileSync(inputPath, 'utf8')) as (string | FixtureSpec)[];
+  const specs: FixtureSpec[] = entries.map((entry) =>
+    typeof entry === 'string' ? { formula: entry } : entry,
+  );
+
   const soffice = findSoffice();
   const workDir = mkdtempSync(join(tmpdir(), 'gridcalc-fixtures-'));
 
   try {
-    const fodsPath = join(workDir, 'fixtures.fods');
-    writeFileSync(fodsPath, buildFods(formulas));
-    execFileSync(soffice, ['--headless', '--convert-to', 'csv', '--outdir', workDir, fodsPath], {
+    const formulaRows: number[] = [];
+    const fodsPaths: string[] = [];
+    specs.forEach((spec, i) => {
+      const { xml, formulaRow } = buildFods(spec);
+      const path = join(workDir, `f${i}.fods`);
+      writeFileSync(path, xml);
+      fodsPaths.push(path);
+      formulaRows.push(formulaRow);
+    });
+
+    // One LibreOffice startup converts every document.
+    execFileSync(soffice, ['--headless', '--convert-to', 'csv', '--outdir', workDir, ...fodsPaths], {
       stdio: 'ignore',
     });
 
-    const csv = readFileSync(join(workDir, 'fixtures.csv'), 'utf8');
-    const values = parseCsvColumn(csv);
-    if (values.length !== formulas.length) {
-      throw new Error(`Expected ${formulas.length} results, got ${values.length}`);
-    }
+    const fixtures = specs.map((spec, i) => {
+      const csv = readFileSync(join(workDir, `f${i}.csv`), 'utf8');
+      const lines = csv.replace(/\r\n/g, '\n').split('\n');
+      const line = lines[formulaRows[i]! - 1];
+      if (line === undefined) {
+        throw new Error(`No CSV output for ${spec.formula}`);
+      }
+      const computed = toFixtureValue(firstCsvField(line));
+      const expected = spec.expected ?? computed;
+      if (typeof expected === 'string' && expected.startsWith('Err:')) {
+        console.warn(`WARNING: LibreOffice could not compute ${spec.formula} -> ${expected}`);
+      }
+      return spec.inputs
+        ? { formula: spec.formula, inputs: spec.inputs, expected }
+        : { formula: spec.formula, expected };
+    });
 
-    const fixtures = formulas.map((formula, i) => ({
-      formula,
-      expected: toFixtureValue(values[i]!),
-    }));
     writeFileSync(outputPath, JSON.stringify(fixtures, null, 2) + '\n');
     console.log(`Wrote ${fixtures.length} fixtures to ${basename(outputPath)}`);
   } finally {
