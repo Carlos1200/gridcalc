@@ -27,3 +27,12 @@ export interface RangeReference {
   start: CellReference;
   end: CellReference;
 }
+
+/**
+ * A fully resolved rectangular range: absolute addresses, normalized so that
+ * `start` is the top-left corner and `end` the bottom-right one.
+ */
+export interface SimpleCellRange {
+  start: SimpleCellAddress;
+  end: SimpleCellAddress;
+}

@@ -31,7 +31,18 @@ export {
   indexToColLetter,
   parseCellReference,
 } from './reference/addressing';
-export type { CellReference, RangeReference, SimpleCellAddress } from './reference/types';
+export type {
+  CellReference,
+  RangeReference,
+  SimpleCellAddress,
+  SimpleCellRange,
+} from './reference/types';
+export {
+  extractDependencies,
+  VOLATILE_FUNCTIONS,
+  type FormulaDependencies,
+} from './dependency/extract';
+export { DependencyGraph, type RecalculationPlan } from './dependency/graph';
 export { FormulaSyntaxError, tokenize } from './lexer/lexer';
 export { TokenType, type Token } from './lexer/tokens';
 export { parseFormula } from './parser/parser';

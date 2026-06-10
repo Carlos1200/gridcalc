@@ -2,7 +2,7 @@
 
 > Documento de seguimiento para sesiones de trabajo. Marcar ítems al completarlos.
 > La especificación completa está en `docs/SPEC.md` (fuente de verdad del diseño).
-> Última actualización: 2026-06-09.
+> Última actualización: 2026-06-10.
 
 ## Decisiones tomadas
 
@@ -35,13 +35,13 @@
 - [x] `lexer/` — tokenizador consciente de locale (`=SUM(1,5;2)` en config es), strings escapados, notación científica, literales de error, desambiguación celda-vs-función estilo Excel (`LOG10` vs `LOG10()`)
 - [x] `parser/` — Pratt con precedencia Excel completa (§8): `^` asociativo izquierda, `-` unario más fuerte que `^` (`-2^2=4`), `%` postfijo, rangos, argumentos omitidos (`=IF(1,,2)`), tolerante a errores
 - [x] `ast/` — todos los nodos incl. `EmptyArgAst`, `ParseErrorAst`, `ArrayLiteralAst` (este último se parsea en Fase 3)
-- [ ] **`dependency/` — grafo de dependencias** ← SIGUIENTE PASO
-  - [ ] Extracción de referencias del AST y registro de aristas
-  - [ ] Orden topológico (Kahn o DFS)
-  - [ ] Detección de ciclos (Tarjan/SCC) → `#CIRCULAR`
-  - [ ] Recálculo incremental (dirty solo el subárbol de dependientes)
-  - [ ] Flag de funciones volátiles (NOW, TODAY, RAND, OFFSET, INDIRECT)
-- [ ] `evaluator/` — recorrido del AST, `EvaluationContext`, resolución de referencias, operadores binarios/unarios con coerciones, propagación de errores
+- [x] `dependency/` — grafo de dependencias
+  - [x] Extracción de referencias del AST (`extract.ts`: celdas, rangos normalizados, named expressions, dedupe)
+  - [x] Orden topológico + detección de ciclos en un solo paso: Tarjan iterativo (SCC) sobre el subgrafo dirty; emite SCCs en orden precedentes-primero
+  - [x] Recálculo incremental: `getRecalculationPlan(changed)` → `{ order, cyclic }`; dirty = clausura de dependientes; celdas en ciclo → el engine les asignará `#CIRCULAR!` y sus dependientes lo propagan como valor
+  - [x] Flag de volátiles (`VOLATILE_FUNCTIONS`: NOW, TODAY, RAND, RANDBETWEEN, OFFSET, INDIRECT) detectado en el AST; las volátiles entran en todo plan
+  - Nota: los rangos se expanden a aristas por celda al registrar la fórmula (suficiente para Fase 1; nodos-rango estilo HyperFormula quedan como optimización futura)
+- [ ] **`evaluator/` — recorrido del AST, `EvaluationContext`, resolución de referencias, operadores binarios/unarios con coerciones, propagación de errores** ← SIGUIENTE PASO
 - [ ] `functions/registry.ts` — registro central, metadata (`minArgs`/`maxArgs`/`volatile`/`argHandling`)
 - [ ] **~40 funciones de Fase 1, cada una con golden tests:**
   - [ ] math: SUM, ROUND, ROUNDUP, ROUNDDOWN, ABS, SQRT, POWER, MOD, INT
