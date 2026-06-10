@@ -22,7 +22,7 @@
 - [x] Harness de golden tests (`tests/golden/harness.ts`): carga `*.fixtures.json`, tolerancia de punto flotante, errores comparados por display string (`#DIV/0!`)
 - [x] Fixture dummy pasa por todo el pipeline (criterio de aceptación de Fase 0)
 - [x] `scripts/generate-fixtures.ts`: genera `.fods`, lo corre por LibreOffice headless, emite fixtures JSON
-- [ ] ⚠️ Probar `generate-fixtures.ts` de verdad — **requiere instalar LibreOffice** (`brew install --cask libreoffice`); está escrito pero sin ejecutar
+- [x] `generate-fixtures.ts` probado y funcionando contra LibreOffice 26.2.4.2 (2026-06-10). Fixes que necesitó: declarar `xmlns:of` (sin él todo era Err:510), refs ODF `[.A1]` vía el lexer propio, booleanos como `TRUE()`, `IFS`/`CONCAT` como `COM.MICROSOFT.*`, soporte de `inputs` (un .fods por fixture, una sola invocación de soffice), campo `expected` manual para divergencias LO/Excel
 - [ ] CI (GitHub Actions) cuando haya remoto
 
 ## Fase 1 — MVP núcleo (single sheet) 🔶 EN CURSO
@@ -47,14 +47,16 @@
   - Las funciones reciben args crudos (eager) o ASTs (lazy para IF/IFERROR/AND/OR con cortocircuito); cada función hace sus propias coerciones
 - [x] `functions/registry.ts` — `FunctionRegistry` por motor (case-insensitive, duplicados lanzan), metadata (`minArgs`/`maxArgs`/`volatile`/`argHandling: scalar|range-aware|lazy`); arity inválida → `#N/A`, función desconocida → `#NAME?`
   - Pendiente: unificar `VOLATILE_FUNCTIONS` (hoy set estático en `dependency/extract.ts`) con el flag `volatile` del registro cuando existan las funciones
-- [ ] **~40 funciones de Fase 1, cada una con golden tests:** ← SIGUIENTE PASO
-  - [ ] math: SUM, ROUND, ROUNDUP, ROUNDDOWN, ABS, SQRT, POWER, MOD, INT
-  - [ ] statistical: AVERAGE, COUNT, COUNTA, MIN, MAX, SUMIF, COUNTIF
-  - [ ] logical: IF, IFS, AND, OR, NOT, IFERROR
-  - [ ] text: CONCAT, LEFT, RIGHT, MID, LEN, UPPER, LOWER, TRIM, TEXT, VALUE
-  - [ ] lookup: VLOOKUP, HLOOKUP, INDEX, MATCH
-  - [ ] information: ISBLANK, ISNUMBER, ISTEXT, ISERROR
-  - [ ] datetime: TODAY, NOW, DATE
+- [x] **~40 funciones de Fase 1, cada una con golden tests** (206 fixtures generados contra LibreOffice; las listas fuente viven en `tests/golden/formulas/*.json` y se regeneran con `npm run generate-fixtures`):
+  - [x] math: SUM, ROUND, ROUNDUP, ROUNDDOWN, ABS, SQRT, POWER, MOD, INT
+  - [x] statistical: AVERAGE, COUNT, COUNTA, MIN, MAX, SUMIF, COUNTIF
+  - [x] logical: IF, IFS, AND, OR, NOT, IFERROR (IF/IFS/IFERROR lazy con cortocircuito; AND/OR eager — Excel NO cortocircuita: `=AND(FALSE,1/0)`→`#DIV/0!`)
+  - [x] text: CONCAT, LEFT, RIGHT, MID, LEN, UPPER, LOWER, TRIM, TEXT (subset numérico: General/0/0.00/#,##0/%; formatos de fecha → Fase 4), VALUE
+  - [x] lookup: VLOOKUP, HLOOKUP, INDEX, MATCH (sin comodines en lookups por ahora; COUNTIF/SUMIF sí los soportan con `~` escape)
+  - [x] information: ISBLANK, ISNUMBER, ISTEXT, ISERROR (no propagan errores)
+  - [x] datetime: TODAY, NOW (volátiles), DATE (normaliza overflow de mes/día, años 0-1899 suman 1900)
+  - Divergencias LO/Excel documentadas con `expected` manual en las listas: LO trata booleanos como números (SUM/COUNT/AVERAGE/LEN/ISNUMBER), comodines desactivados por defecto, `Err:502` donde Excel da `#NUM!`/`#DIV/0!`/`#REF!`, coerción de texto en args directos de SUM/AVERAGE/MIN, CONCAT de booleanos
+  - PRODUCT, CEILING, FLOOR y demás quedan para la expansión a ~150 (Fase 2)
 - [x] `engine/Engine.ts` — `buildEmpty`, `setCellContents` (devuelve `ChangedCell[]`, solo celdas cuyo valor cambió), `getCellValue` (null = vacía), `getCellFormula`, `batch` (un solo recálculo; recalcula incluso si el callback lanza)
   - Contenido tecleado se parsea estilo Excel: `"42"`→42, `"TRUE"`→true; `null`/`""` limpia la celda
   - Resultado vacío de fórmula se materializa a 0 (`=A1` con A1 vacía); `-0` se normaliza a 0 (Excel no tiene cero negativo)

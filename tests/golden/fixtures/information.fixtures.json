@@ -1,0 +1,97 @@
+[
+  {
+    "formula": "=ISBLANK(A1)",
+    "inputs": {},
+    "expected": true
+  },
+  {
+    "formula": "=ISBLANK(A1)",
+    "inputs": {
+      "A1": 0
+    },
+    "expected": false
+  },
+  {
+    "formula": "=ISBLANK(A1)",
+    "inputs": {
+      "A1": "x"
+    },
+    "expected": false
+  },
+  {
+    "formula": "=ISBLANK(\"\")",
+    "expected": false
+  },
+  {
+    "formula": "=ISBLANK(0)",
+    "expected": false
+  },
+  {
+    "formula": "=ISNUMBER(1)",
+    "expected": true
+  },
+  {
+    "formula": "=ISNUMBER(\"1\")",
+    "expected": false
+  },
+  {
+    "formula": "=ISNUMBER(TRUE)",
+    "expected": false
+  },
+  {
+    "formula": "=ISNUMBER(1/0)",
+    "expected": false
+  },
+  {
+    "formula": "=ISNUMBER(A1)",
+    "inputs": {
+      "A1": 5
+    },
+    "expected": true
+  },
+  {
+    "formula": "=ISNUMBER(A1)",
+    "inputs": {},
+    "expected": false
+  },
+  {
+    "formula": "=ISTEXT(\"a\")",
+    "expected": true
+  },
+  {
+    "formula": "=ISTEXT(1)",
+    "expected": false
+  },
+  {
+    "formula": "=ISTEXT(TRUE)",
+    "expected": false
+  },
+  {
+    "formula": "=ISTEXT(A1)",
+    "inputs": {
+      "A1": "x"
+    },
+    "expected": true
+  },
+  {
+    "formula": "=ISTEXT(A1)",
+    "inputs": {},
+    "expected": false
+  },
+  {
+    "formula": "=ISERROR(1/0)",
+    "expected": true
+  },
+  {
+    "formula": "=ISERROR(42)",
+    "expected": false
+  },
+  {
+    "formula": "=ISERROR(\"#N/A\")",
+    "expected": false
+  },
+  {
+    "formula": "=ISERROR(SQRT(-1))",
+    "expected": true
+  }
+]

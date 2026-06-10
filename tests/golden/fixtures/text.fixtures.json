@@ -1,0 +1,172 @@
+[
+  {
+    "formula": "=CONCAT(\"foo\",\"bar\")",
+    "expected": "foobar"
+  },
+  {
+    "formula": "=CONCAT(\"a\",1,TRUE)",
+    "expected": "a1TRUE"
+  },
+  {
+    "formula": "=CONCAT(A1:B2)",
+    "inputs": {
+      "A1": "a",
+      "B1": "b",
+      "A2": "c",
+      "B2": "d"
+    },
+    "expected": "abcd"
+  },
+  {
+    "formula": "=CONCAT(A1:A3)",
+    "inputs": {
+      "A1": "x",
+      "A3": "y"
+    },
+    "expected": "xy"
+  },
+  {
+    "formula": "=CONCAT(\"a\",1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=LEFT(\"hello\",2)",
+    "expected": "he"
+  },
+  {
+    "formula": "=LEFT(\"hello\")",
+    "expected": "h"
+  },
+  {
+    "formula": "=LEFT(\"hello\",0)",
+    "expected": ""
+  },
+  {
+    "formula": "=LEFT(\"hello\",99)",
+    "expected": "hello"
+  },
+  {
+    "formula": "=LEFT(\"hello\",-1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=LEFT(123.45,4)",
+    "expected": "123."
+  },
+  {
+    "formula": "=RIGHT(\"hello\",3)",
+    "expected": "llo"
+  },
+  {
+    "formula": "=RIGHT(\"hello\")",
+    "expected": "o"
+  },
+  {
+    "formula": "=RIGHT(\"hello\",99)",
+    "expected": "hello"
+  },
+  {
+    "formula": "=MID(\"hello\",2,3)",
+    "expected": "ell"
+  },
+  {
+    "formula": "=MID(\"hello\",1,2)",
+    "expected": "he"
+  },
+  {
+    "formula": "=MID(\"hello\",10,2)",
+    "expected": ""
+  },
+  {
+    "formula": "=MID(\"hello\",0,2)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=MID(\"hello\",2,-1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=LEN(\"hello\")",
+    "expected": 5
+  },
+  {
+    "formula": "=LEN(\"\")",
+    "expected": 0
+  },
+  {
+    "formula": "=LEN(123)",
+    "expected": 3
+  },
+  {
+    "formula": "=LEN(TRUE)",
+    "expected": 4
+  },
+  {
+    "formula": "=UPPER(\"Hello World\")",
+    "expected": "HELLO WORLD"
+  },
+  {
+    "formula": "=LOWER(\"Hello World\")",
+    "expected": "hello world"
+  },
+  {
+    "formula": "=UPPER(123)",
+    "expected": "123"
+  },
+  {
+    "formula": "=TRIM(\"  hello   world  \")",
+    "expected": "hello world"
+  },
+  {
+    "formula": "=TRIM(\"nospaces\")",
+    "expected": "nospaces"
+  },
+  {
+    "formula": "=VALUE(\"5\")",
+    "expected": 5
+  },
+  {
+    "formula": "=VALUE(\"1.5e3\")",
+    "expected": 1500
+  },
+  {
+    "formula": "=VALUE(\"50%\")",
+    "expected": 0.5
+  },
+  {
+    "formula": "=VALUE(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=VALUE(12)",
+    "expected": 12
+  },
+  {
+    "formula": "=TEXT(1234.567,\"0.00\")",
+    "expected": "1234.57"
+  },
+  {
+    "formula": "=TEXT(1234.567,\"0\")",
+    "expected": "1235"
+  },
+  {
+    "formula": "=TEXT(1234.567,\"#,##0\")",
+    "expected": "1,235"
+  },
+  {
+    "formula": "=TEXT(1234.567,\"#,##0.00\")",
+    "expected": "1,234.57"
+  },
+  {
+    "formula": "=TEXT(0.285,\"0.0%\")",
+    "expected": "28.5%"
+  },
+  {
+    "formula": "=TEXT(0.285,\"0%\")",
+    "expected": "29%"
+  },
+  {
+    "formula": "=TEXT(5,\"General\")",
+    "expected": "5"
+  }
+]

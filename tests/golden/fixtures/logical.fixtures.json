@@ -1,0 +1,145 @@
+[
+  {
+    "formula": "=IF(TRUE,\"yes\",\"no\")",
+    "expected": "yes"
+  },
+  {
+    "formula": "=IF(FALSE,\"yes\",\"no\")",
+    "expected": "no"
+  },
+  {
+    "formula": "=IF(5,\"yes\",\"no\")",
+    "expected": "yes"
+  },
+  {
+    "formula": "=IF(0,\"yes\",\"no\")",
+    "expected": "no"
+  },
+  {
+    "formula": "=IF(1>2,\"yes\")",
+    "expected": false
+  },
+  {
+    "formula": "=IF(1<2,,9)",
+    "expected": 0
+  },
+  {
+    "formula": "=IF(A1,\"yes\",\"no\")",
+    "inputs": {},
+    "expected": "no"
+  },
+  {
+    "formula": "=IF(\"abc\",1,2)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=IF(1/0,1,2)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=IF(TRUE,7,1/0)",
+    "expected": 7
+  },
+  {
+    "formula": "=IFS(FALSE,1,TRUE,2)",
+    "expected": 2
+  },
+  {
+    "formula": "=IFS(1>2,1,2>3,2)",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=IFS(TRUE,\"first\",TRUE,\"second\")",
+    "expected": "first"
+  },
+  {
+    "formula": "=AND(TRUE,TRUE)",
+    "expected": true
+  },
+  {
+    "formula": "=AND(TRUE,FALSE)",
+    "expected": false
+  },
+  {
+    "formula": "=AND(1,1)",
+    "expected": true
+  },
+  {
+    "formula": "=AND(FALSE,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=AND(A1:A3)",
+    "inputs": {
+      "A1": true,
+      "A2": true,
+      "A3": false
+    },
+    "expected": false
+  },
+  {
+    "formula": "=AND(A1:A3,TRUE)",
+    "inputs": {
+      "A1": true,
+      "A2": "text"
+    },
+    "expected": true
+  },
+  {
+    "formula": "=AND(\"abc\",TRUE)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=OR(FALSE,FALSE)",
+    "expected": false
+  },
+  {
+    "formula": "=OR(FALSE,TRUE)",
+    "expected": true
+  },
+  {
+    "formula": "=OR(0,0)",
+    "expected": false
+  },
+  {
+    "formula": "=OR(TRUE,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=OR(A1:A3)",
+    "inputs": {
+      "A1": false,
+      "A2": false,
+      "A3": true
+    },
+    "expected": true
+  },
+  {
+    "formula": "=NOT(TRUE)",
+    "expected": false
+  },
+  {
+    "formula": "=NOT(0)",
+    "expected": true
+  },
+  {
+    "formula": "=NOT(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=IFERROR(1/0,\"caught\")",
+    "expected": "caught"
+  },
+  {
+    "formula": "=IFERROR(42,\"caught\")",
+    "expected": 42
+  },
+  {
+    "formula": "=IFERROR(SQRT(-1),-1)",
+    "expected": -1
+  },
+  {
+    "formula": "=IFERROR(1/0,1/0)",
+    "expected": "#DIV/0!"
+  }
+]

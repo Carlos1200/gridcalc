@@ -65,6 +65,12 @@ function xmlEscape(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/** Functions missing from OpenFormula 1.2; LibreOffice knows them namespaced. */
+const ODF_FUNCTION_NAMES: Record<string, string> = {
+  IFS: 'COM.MICROSOFT.IFS',
+  CONCAT: 'COM.MICROSOFT.CONCAT',
+};
+
 /**
  * Excel -> ODF formula translation using the project lexer: cell references
  * get ODF brackets (A1 -> [.A1], A1:B2 -> [.A1:.B2]) and "," becomes ";".
@@ -89,11 +95,31 @@ function toOdfFormula(formula: string): string {
       result += `[.${token.text}]`;
     } else if (token.type === TokenType.ARG_SEP) {
       result += ';';
+    } else if (token.type === TokenType.BOOLEAN) {
+      // ODF spells boolean literals as functions.
+      result += `${token.text.toUpperCase()}()`;
+    } else if (token.type === TokenType.FUNCTION_NAME) {
+      result += ODF_FUNCTION_NAMES[token.text.toUpperCase()] ?? token.text;
     } else {
       result += token.text;
     }
   }
   return `of:=${result}`;
+}
+
+/** Highest 0-based row the formula references (-1 if none). */
+function maxReferencedRow(formula: string): number {
+  const body = formula.startsWith('=') ? formula.slice(1) : formula;
+  let max = -1;
+  for (const token of tokenize(body)) {
+    if (token.type === TokenType.CELL_REF) {
+      const parsed = parseCellReference(token.text);
+      if (parsed) {
+        max = Math.max(max, parsed.row);
+      }
+    }
+  }
+  return max;
 }
 
 function inputCellXml(value: InputScalar): string {
@@ -125,7 +151,9 @@ function buildFods(spec: FixtureSpec): { xml: string; formulaRow: number } {
     maxCol = Math.max(maxCol, parsed.col);
   }
 
-  const formulaRow = spec.inputs ? maxRow + 2 : 0; // 0-based; leaves one blank row
+  // Below every input AND every referenced cell (a formula inside its own
+  // range would be a circular reference), with one blank row in between.
+  const formulaRow = Math.max(maxRow, maxReferencedRow(spec.formula)) + 2;
   grid.set(
     formulaRow,
     new Map([[0, `<table:table-cell table:formula="${xmlEscape(toOdfFormula(spec.formula))}"/>`]]),

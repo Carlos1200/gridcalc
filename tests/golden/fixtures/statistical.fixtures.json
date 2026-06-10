@@ -1,0 +1,247 @@
+[
+  {
+    "formula": "=AVERAGE(1,2,3)",
+    "expected": 2
+  },
+  {
+    "formula": "=AVERAGE(1,\"4\")",
+    "expected": 2.5
+  },
+  {
+    "formula": "=AVERAGE(1,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=AVERAGE(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": "text",
+      "A3": true,
+      "A4": 4
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=AVERAGE(A1:A3)",
+    "inputs": {
+      "A1": 5
+    },
+    "expected": 5
+  },
+  {
+    "formula": "=AVERAGE(A1:A2)",
+    "inputs": {
+      "A1": "x",
+      "A2": "y"
+    },
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=COUNT(1,2,3)",
+    "expected": 3
+  },
+  {
+    "formula": "=COUNT(1,\"2\",TRUE)",
+    "expected": 3
+  },
+  {
+    "formula": "=COUNT(1,\"abc\")",
+    "expected": 1
+  },
+  {
+    "formula": "=COUNT(A1:A5)",
+    "inputs": {
+      "A1": 1,
+      "A2": "text",
+      "A3": true,
+      "A4": 2.5
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=COUNT(A1:A3)",
+    "inputs": {},
+    "expected": 0
+  },
+  {
+    "formula": "=COUNTA(1,\"abc\",TRUE)",
+    "expected": 3
+  },
+  {
+    "formula": "=COUNTA(A1:A5)",
+    "inputs": {
+      "A1": 1,
+      "A2": "text",
+      "A3": true
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=COUNTA(A1:A3)",
+    "inputs": {},
+    "expected": 0
+  },
+  {
+    "formula": "=MIN(3,1,2)",
+    "expected": 1
+  },
+  {
+    "formula": "=MIN(-1,1)",
+    "expected": -1
+  },
+  {
+    "formula": "=MIN(\"5\",10)",
+    "expected": 5
+  },
+  {
+    "formula": "=MIN(A1:A4)",
+    "inputs": {
+      "A1": 7,
+      "A2": "text",
+      "A3": 3,
+      "A4": 5
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=MIN(A1:A2)",
+    "inputs": {
+      "A1": "x"
+    },
+    "expected": 0
+  },
+  {
+    "formula": "=MAX(3,1,2)",
+    "expected": 3
+  },
+  {
+    "formula": "=MAX(-5,-3)",
+    "expected": -3
+  },
+  {
+    "formula": "=MAX(A1:A4)",
+    "inputs": {
+      "A1": 7,
+      "A2": "text",
+      "A3": 3,
+      "A4": 5
+    },
+    "expected": 7
+  },
+  {
+    "formula": "=MAX(1,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=SUMIF(A1:A4,\">2\")",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 7
+  },
+  {
+    "formula": "=SUMIF(A1:A4,\">=2\")",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 9
+  },
+  {
+    "formula": "=SUMIF(A1:A3,\"b\",B1:B3)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "b",
+      "B3": 30
+    },
+    "expected": 50
+  },
+  {
+    "formula": "=SUMIF(A1:A3,\"<>a\",B1:B3)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "c",
+      "B3": 30
+    },
+    "expected": 50
+  },
+  {
+    "formula": "=SUMIF(A1:A3,5,B1:B3)",
+    "inputs": {
+      "A1": 5,
+      "B1": 10,
+      "A2": 6,
+      "B2": 20,
+      "A3": 5,
+      "B3": 30
+    },
+    "expected": 40
+  },
+  {
+    "formula": "=SUMIF(A1:A3,\"z\")",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    },
+    "expected": 0
+  },
+  {
+    "formula": "=COUNTIF(A1:A4,\">2\")",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=COUNTIF(A1:A3,\"b\")",
+    "inputs": {
+      "A1": "a",
+      "A2": "b",
+      "A3": "B"
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=COUNTIF(A1:A3,\"b*\")",
+    "inputs": {
+      "A1": "boat",
+      "A2": "bee",
+      "A3": "cat"
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=COUNTIF(A1:A3,\"<>1\")",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=COUNTIF(A1:A4,TRUE)",
+    "inputs": {
+      "A1": true,
+      "A2": false,
+      "A3": true,
+      "A4": 1
+    },
+    "expected": 2
+  }
+]

@@ -47,7 +47,8 @@ export {
 } from './dependency/extract';
 export { DependencyGraph, type RecalculationPlan } from './dependency/graph';
 export type { EvaluationContext } from './evaluator/context';
-export { evaluateAst } from './evaluator/interpreter';
+export { compareScalars, evaluateAst } from './evaluator/interpreter';
+export { buildDefaultRegistry } from './functions/index';
 export { FunctionRegistry } from './functions/registry';
 export {
   isLazyFunction,

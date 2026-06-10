@@ -1,0 +1,254 @@
+[
+  {
+    "formula": "=VLOOKUP(\"b\",A1:B3,2,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "c",
+      "B3": 30
+    },
+    "expected": 20
+  },
+  {
+    "formula": "=VLOOKUP(\"B\",A1:B3,2,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "c",
+      "B3": 30
+    },
+    "expected": 20
+  },
+  {
+    "formula": "=VLOOKUP(\"z\",A1:B3,2,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "c",
+      "B3": 30
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=VLOOKUP(2,A1:B3,2,FALSE)",
+    "inputs": {
+      "A1": 1,
+      "B1": 10,
+      "A2": 2,
+      "B2": 20,
+      "A3": 3,
+      "B3": 30
+    },
+    "expected": 20
+  },
+  {
+    "formula": "=VLOOKUP(2.5,A1:B3,2,TRUE)",
+    "inputs": {
+      "A1": 1,
+      "B1": 10,
+      "A2": 2,
+      "B2": 20,
+      "A3": 3,
+      "B3": 30
+    },
+    "expected": 20
+  },
+  {
+    "formula": "=VLOOKUP(0.5,A1:B3,2,TRUE)",
+    "inputs": {
+      "A1": 1,
+      "B1": 10,
+      "A2": 2,
+      "B2": 20,
+      "A3": 3,
+      "B3": 30
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=VLOOKUP(99,A1:B3,2)",
+    "inputs": {
+      "A1": 1,
+      "B1": 10,
+      "A2": 2,
+      "B2": 20,
+      "A3": 3,
+      "B3": 30
+    },
+    "expected": 30
+  },
+  {
+    "formula": "=VLOOKUP(\"a\",A1:B3,5,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "c",
+      "B3": 30
+    },
+    "expected": "#REF!"
+  },
+  {
+    "formula": "=VLOOKUP(\"a\",A1:B3,0,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": 10,
+      "A2": "b",
+      "B2": 20,
+      "A3": "c",
+      "B3": 30
+    },
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=HLOOKUP(\"b\",A1:C2,2,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": "b",
+      "C1": "c",
+      "A2": 1,
+      "B2": 2,
+      "C2": 3
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=HLOOKUP(5,A1:C2,2,TRUE)",
+    "inputs": {
+      "A1": 1,
+      "B1": 4,
+      "C1": 7,
+      "A2": 10,
+      "B2": 20,
+      "C2": 30
+    },
+    "expected": 20
+  },
+  {
+    "formula": "=HLOOKUP(\"z\",A1:C2,2,FALSE)",
+    "inputs": {
+      "A1": "a",
+      "B1": "b",
+      "C1": "c",
+      "A2": 1,
+      "B2": 2,
+      "C2": 3
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=INDEX(A1:B3,2,2)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "A3": 5,
+      "B3": 6
+    },
+    "expected": 4
+  },
+  {
+    "formula": "=INDEX(A1:B3,4,1)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "A3": 5,
+      "B3": 6
+    },
+    "expected": "#REF!"
+  },
+  {
+    "formula": "=INDEX(A1:A3,2)",
+    "inputs": {
+      "A1": "x",
+      "A2": "y",
+      "A3": "z"
+    },
+    "expected": "y"
+  },
+  {
+    "formula": "=INDEX(A1:C1,3)",
+    "inputs": {
+      "A1": "x",
+      "B1": "y",
+      "C1": "z"
+    },
+    "expected": "z"
+  },
+  {
+    "formula": "=MATCH(\"b\",A1:A3,0)",
+    "inputs": {
+      "A1": "a",
+      "A2": "b",
+      "A3": "c"
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=MATCH(\"z\",A1:A3,0)",
+    "inputs": {
+      "A1": "a",
+      "A2": "b",
+      "A3": "c"
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=MATCH(7,A1:A4,1)",
+    "inputs": {
+      "A1": 1,
+      "A2": 5,
+      "A3": 7,
+      "A4": 9
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=MATCH(6,A1:A4,1)",
+    "inputs": {
+      "A1": 1,
+      "A2": 5,
+      "A3": 7,
+      "A4": 9
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=MATCH(8,A1:A4,-1)",
+    "inputs": {
+      "A1": 9,
+      "A2": 7,
+      "A3": 5,
+      "A4": 1
+    },
+    "expected": 1
+  },
+  {
+    "formula": "=MATCH(2,A1:A3,0)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=MATCH(\"b\",B1:D1,0)",
+    "inputs": {
+      "B1": "a",
+      "C1": "b",
+      "D1": "c"
+    },
+    "expected": 2
+  }
+]

@@ -219,14 +219,15 @@ function arithmetic(
 }
 
 /**
- * Excel comparison semantics, shared by all six comparison operators:
+ * Excel comparison semantics, shared by all six comparison operators (and by
+ * lookup/criteria matching in the function library):
  * - cross-type values never coerce; they order as number < text < logical
  *   (so ="1"=1 is FALSE and =1<"a" is TRUE);
  * - text compares case-insensitively;
  * - an empty cell adopts the other side's type: 0, "" or FALSE.
  * Returns negative / zero / positive.
  */
-function compareScalars(leftRaw: RawScalarValue, rightRaw: RawScalarValue): number {
+export function compareScalars(leftRaw: RawScalarValue, rightRaw: RawScalarValue): number {
   let left = leftRaw === EmptyValue ? neutralFor(rightRaw) : leftRaw;
   const right = rightRaw === EmptyValue ? neutralFor(left) : rightRaw;
   left = left === EmptyValue ? neutralFor(right) : left;

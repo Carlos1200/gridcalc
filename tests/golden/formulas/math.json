@@ -1,0 +1,91 @@
+[
+  "=SUM(1,2,3)",
+  "=SUM(0.1,0.2)",
+  {
+    "formula": "=SUM(\"5\",5)",
+    "expected": 10
+  },
+  "=SUM(TRUE,1)",
+  "=SUM(1,1/0)",
+  "=SUM(\"abc\",1)",
+  {
+    "formula": "=SUM(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    }
+  },
+  {
+    "formula": "=SUM(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": "text",
+      "A3": true,
+      "A4": 3
+    },
+    "expected": 4
+  },
+  {
+    "formula": "=SUM(A1:A3)",
+    "inputs": {
+      "A1": 1.5
+    }
+  },
+  {
+    "formula": "=SUM(A1:B2,10)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4
+    }
+  },
+  "=ROUND(2.5,0)",
+  "=ROUND(-2.5,0)",
+  "=ROUND(2.345,2)",
+  "=ROUND(2.675,2)",
+  "=ROUND(1234.567,-2)",
+  "=ROUND(\"abc\",1)",
+  "=ROUNDUP(2.1,0)",
+  "=ROUNDUP(-2.1,0)",
+  "=ROUNDUP(3.14159,3)",
+  "=ROUNDUP(1234.567,-2)",
+  "=ROUNDDOWN(2.9,0)",
+  "=ROUNDDOWN(-2.9,0)",
+  "=ROUNDDOWN(3.14159,3)",
+  "=ABS(-3.5)",
+  "=ABS(3.5)",
+  "=ABS(\"-7\")",
+  "=ABS(\"abc\")",
+  "=SQRT(16)",
+  "=SQRT(\"16\")",
+  "=SQRT(0)",
+  {
+    "formula": "=SQRT(-1)",
+    "expected": "#NUM!"
+  },
+  "=POWER(2,10)",
+  "=POWER(4,0.5)",
+  "=POWER(-2,3)",
+  {
+    "formula": "=POWER(0,0)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=POWER(-4,0.5)",
+    "expected": "#NUM!"
+  },
+  "=MOD(10,3)",
+  "=MOD(-10,3)",
+  "=MOD(10,-3)",
+  "=MOD(10.5,3)",
+  {
+    "formula": "=MOD(10,0)",
+    "expected": "#DIV/0!"
+  },
+  "=INT(5.7)",
+  "=INT(-5.7)",
+  "=INT(\"3.9\")",
+  "=INT(1/0)"
+]

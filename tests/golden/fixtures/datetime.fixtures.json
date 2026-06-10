@@ -1,0 +1,50 @@
+[
+  {
+    "formula": "=DATE(2008,1,1)=39448",
+    "expected": true
+  },
+  {
+    "formula": "=DATE(2026,6,10)-DATE(2026,6,9)",
+    "expected": 1
+  },
+  {
+    "formula": "=DATE(2008,14,1)=DATE(2009,2,1)",
+    "expected": true
+  },
+  {
+    "formula": "=DATE(2008,1,32)=DATE(2008,2,1)",
+    "expected": true
+  },
+  {
+    "formula": "=DATE(2008,0,15)=DATE(2007,12,15)",
+    "expected": true
+  },
+  {
+    "formula": "=DATE(108,1,1)=DATE(2008,1,1)",
+    "expected": true
+  },
+  {
+    "formula": "=DATE(2026,2,29)=DATE(2026,3,1)",
+    "expected": true
+  },
+  {
+    "formula": "=DATE(2026,6,10)-DATE(2026,1,1)",
+    "expected": 160
+  },
+  {
+    "formula": "=TODAY()>=46000",
+    "expected": true
+  },
+  {
+    "formula": "=TODAY()=INT(TODAY())",
+    "expected": true
+  },
+  {
+    "formula": "=NOW()>=TODAY()",
+    "expected": true
+  },
+  {
+    "formula": "=NOW()-TODAY()<1",
+    "expected": true
+  }
+]

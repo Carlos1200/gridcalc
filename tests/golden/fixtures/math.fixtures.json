@@ -1,0 +1,202 @@
+[
+  {
+    "formula": "=SUM(1,2,3)",
+    "expected": 6
+  },
+  {
+    "formula": "=SUM(0.1,0.2)",
+    "expected": 0.3
+  },
+  {
+    "formula": "=SUM(\"5\",5)",
+    "expected": 10
+  },
+  {
+    "formula": "=SUM(TRUE,1)",
+    "expected": 2
+  },
+  {
+    "formula": "=SUM(1,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=SUM(\"abc\",1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SUM(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    },
+    "expected": 6
+  },
+  {
+    "formula": "=SUM(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": "text",
+      "A3": true,
+      "A4": 3
+    },
+    "expected": 4
+  },
+  {
+    "formula": "=SUM(A1:A3)",
+    "inputs": {
+      "A1": 1.5
+    },
+    "expected": 1.5
+  },
+  {
+    "formula": "=SUM(A1:B2,10)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4
+    },
+    "expected": 20
+  },
+  {
+    "formula": "=ROUND(2.5,0)",
+    "expected": 3
+  },
+  {
+    "formula": "=ROUND(-2.5,0)",
+    "expected": -3
+  },
+  {
+    "formula": "=ROUND(2.345,2)",
+    "expected": 2.35
+  },
+  {
+    "formula": "=ROUND(2.675,2)",
+    "expected": 2.68
+  },
+  {
+    "formula": "=ROUND(1234.567,-2)",
+    "expected": 1200
+  },
+  {
+    "formula": "=ROUND(\"abc\",1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=ROUNDUP(2.1,0)",
+    "expected": 3
+  },
+  {
+    "formula": "=ROUNDUP(-2.1,0)",
+    "expected": -3
+  },
+  {
+    "formula": "=ROUNDUP(3.14159,3)",
+    "expected": 3.142
+  },
+  {
+    "formula": "=ROUNDUP(1234.567,-2)",
+    "expected": 1300
+  },
+  {
+    "formula": "=ROUNDDOWN(2.9,0)",
+    "expected": 2
+  },
+  {
+    "formula": "=ROUNDDOWN(-2.9,0)",
+    "expected": -2
+  },
+  {
+    "formula": "=ROUNDDOWN(3.14159,3)",
+    "expected": 3.141
+  },
+  {
+    "formula": "=ABS(-3.5)",
+    "expected": 3.5
+  },
+  {
+    "formula": "=ABS(3.5)",
+    "expected": 3.5
+  },
+  {
+    "formula": "=ABS(\"-7\")",
+    "expected": 7
+  },
+  {
+    "formula": "=ABS(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SQRT(16)",
+    "expected": 4
+  },
+  {
+    "formula": "=SQRT(\"16\")",
+    "expected": 4
+  },
+  {
+    "formula": "=SQRT(0)",
+    "expected": 0
+  },
+  {
+    "formula": "=SQRT(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=POWER(2,10)",
+    "expected": 1024
+  },
+  {
+    "formula": "=POWER(4,0.5)",
+    "expected": 2
+  },
+  {
+    "formula": "=POWER(-2,3)",
+    "expected": -8
+  },
+  {
+    "formula": "=POWER(0,0)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=POWER(-4,0.5)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=MOD(10,3)",
+    "expected": 1
+  },
+  {
+    "formula": "=MOD(-10,3)",
+    "expected": 2
+  },
+  {
+    "formula": "=MOD(10,-3)",
+    "expected": -2
+  },
+  {
+    "formula": "=MOD(10.5,3)",
+    "expected": 1.5
+  },
+  {
+    "formula": "=MOD(10,0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=INT(5.7)",
+    "expected": 5
+  },
+  {
+    "formula": "=INT(-5.7)",
+    "expected": -6
+  },
+  {
+    "formula": "=INT(\"3.9\")",
+    "expected": 3
+  },
+  {
+    "formula": "=INT(1/0)",
+    "expected": "#DIV/0!"
+  }
+]

@@ -10,7 +10,8 @@ import { extractDependencies } from '../dependency/extract';
 import { DependencyGraph } from '../dependency/graph';
 import type { EvaluationContext } from '../evaluator/context';
 import { evaluateAst } from '../evaluator/interpreter';
-import { FunctionRegistry } from '../functions/registry';
+import { buildDefaultRegistry } from '../functions/index';
+import type { FunctionRegistry } from '../functions/registry';
 import { parseFormula } from '../parser/parser';
 import { cellAddressKey } from '../reference/addressing';
 import type { SimpleCellAddress, SimpleCellRange } from '../reference/types';
@@ -50,7 +51,7 @@ export class Engine {
 
   private constructor(config?: Partial<EngineConfig>) {
     this.config = buildConfig(config);
-    this.functions = new FunctionRegistry();
+    this.functions = buildDefaultRegistry();
   }
 
   static buildEmpty(config?: Partial<EngineConfig>): Engine {
