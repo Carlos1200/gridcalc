@@ -79,5 +79,23 @@
   "=ISEVEN(1/0)",
   "=ISODD(-3)",
   "=ISODD(2.5)",
-  "=ISODD(4)"
+  "=ISODD(4)",
+  "=N(7)",
+  "=N(TRUE)",
+  "=N(\"7\")",
+  "=N(1/0)",
+  "=T(\"abc\")",
+  "=T(7)",
+  "=T(TRUE)",
+  "=NA()",
+  "=ERROR.TYPE(1/0)",
+  "=ERROR.TYPE(NA())",
+  {
+    "formula": "=ERROR.TYPE(SQRT(-1))",
+    "expected": 6
+  },
+  {
+    "formula": "=ERROR.TYPE(42)",
+    "expected": "#N/A"
+  }
 ]

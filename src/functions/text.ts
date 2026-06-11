@@ -196,6 +196,57 @@ export const textFunctions: RegisteredFunction[] = [
   },
   finder('FIND'),
   finder('SEARCH'),
+  // Capitalizes the first letter of every letter run: PROPER("2-cent's") = "2-Cent'S".
+  text1('PROPER', (text) =>
+    text.replace(/\p{L}+/gu, (word) => word[0]!.toUpperCase() + word.slice(1).toLowerCase()),
+  ),
+  // Removes non-printable characters (codes 0-31).
+  text1('CLEAN', (text) => text.replace(/[\u0000-\u001F]/g, '')),
+  text1('CODE', (text) =>
+    text === ''
+      ? new CellError(CellErrorType.VALUE, 'CODE needs a non-empty string')
+      : text.charCodeAt(0),
+  ),
+  {
+    metadata: { name: 'CHAR', minArgs: 1, maxArgs: 1 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      const code = Math.trunc(n);
+      if (code < 1 || code > 255) {
+        return new CellError(CellErrorType.VALUE, 'CHAR code must be between 1 and 255');
+      }
+      return String.fromCharCode(code);
+    },
+  },
+  {
+    metadata: { name: 'EXACT', minArgs: 2, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const a = asString(args[0]!);
+      if (a instanceof CellError) {
+        return a;
+      }
+      const b = asString(args[1]!);
+      return b instanceof CellError ? b : a === b; // case-sensitive
+    },
+  },
+  {
+    // Legacy CONCATENATE takes scalars only; CONCAT is the range-aware one.
+    metadata: { name: 'CONCATENATE', minArgs: 1, maxArgs: Infinity },
+    fn: (args: RawInterpreterValue[]) => {
+      let out = '';
+      for (const arg of args) {
+        const text = asString(arg);
+        if (text instanceof CellError) {
+          return text;
+        }
+        out += text;
+      }
+      return out;
+    },
+  },
   {
     metadata: { name: 'SUBSTITUTE', minArgs: 3, maxArgs: 4 },
     fn: (args: RawInterpreterValue[]) => {

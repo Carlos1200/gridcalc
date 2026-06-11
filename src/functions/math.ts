@@ -1,4 +1,4 @@
-/** Math functions: SUM, PRODUCT, ROUND family, CEILING/FLOOR, ABS, SQRT, POWER, MOD, INT, SUMPRODUCT. */
+/** Math functions: SUM, PRODUCT, rounding (ROUND/CEILING/TRUNC/EVEN...), logs, SUMPRODUCT... */
 
 import { CellError, CellErrorType, type RawInterpreterValue } from '../value/types';
 import { asMatrix, asNumber, asScalar, forEachNumber, roundScaled } from './helpers';
@@ -104,6 +104,70 @@ export const mathFunctions: RegisteredFunction[] = [
     const result = Math.floor(cleanQuotient(n, significance)) * significance;
     return result === 0 ? 0 : result;
   }),
+  {
+    // TRUNC is ROUNDDOWN with an optional digit count (default 0).
+    metadata: { name: 'TRUNC', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      let digits = 0;
+      if (args.length > 1) {
+        const digitsNum = asNumber(args[1]!);
+        if (digitsNum instanceof CellError) {
+          return digitsNum;
+        }
+        digits = digitsNum;
+      }
+      return roundScaled(n, digits, 'down');
+    },
+  },
+  numeric1('SIGN', (n) => (n === 0 ? 0 : Math.sign(n))),
+  numeric1('EXP', (n) => {
+    const result = Math.exp(n);
+    return Number.isFinite(result) ? result : new CellError(CellErrorType.NUM, 'Numeric overflow');
+  }),
+  numeric1('LN', (n) =>
+    n <= 0 ? new CellError(CellErrorType.NUM, 'LN needs a positive number') : Math.log(n),
+  ),
+  numeric1('LOG10', (n) =>
+    n <= 0 ? new CellError(CellErrorType.NUM, 'LOG10 needs a positive number') : Math.log10(n),
+  ),
+  {
+    metadata: { name: 'LOG', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      let base = 10;
+      if (args.length > 1) {
+        const baseNum = asNumber(args[1]!);
+        if (baseNum instanceof CellError) {
+          return baseNum;
+        }
+        base = baseNum;
+      }
+      if (n <= 0 || base <= 0) {
+        return new CellError(CellErrorType.NUM, 'LOG needs positive arguments');
+      }
+      if (base === 1) {
+        return new CellError(CellErrorType.DIV_BY_ZERO, 'LOG base cannot be 1');
+      }
+      return Math.log(n) / Math.log(base);
+    },
+  },
+  {
+    metadata: { name: 'PI', minArgs: 0, maxArgs: 0 },
+    fn: () => Math.PI,
+  },
+  // EVEN/ODD round away from zero to the next even/odd integer.
+  numeric1('EVEN', (n) => {
+    const result = (n < 0 ? -1 : 1) * 2 * Math.ceil(Math.abs(n) / 2);
+    return result === 0 ? 0 : result;
+  }),
+  numeric1('ODD', (n) => (n < 0 ? -1 : 1) * (2 * Math.ceil((Math.abs(n) - 1) / 2) + 1)),
   {
     metadata: { name: 'SUMPRODUCT', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
     fn: (args: RawInterpreterValue[]) => {

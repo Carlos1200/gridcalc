@@ -29,6 +29,18 @@ function parityCheck(name: 'ISEVEN' | 'ISODD'): RegisteredFunction {
   };
 }
 
+/** Excel's ERROR.TYPE numbering; unmapped engine-specific errors -> #N/A. */
+const ERROR_TYPE_CODES: Partial<Record<CellErrorType, number>> = {
+  [CellErrorType.NULL]: 1,
+  [CellErrorType.DIV_BY_ZERO]: 2,
+  [CellErrorType.VALUE]: 3,
+  [CellErrorType.REF]: 4,
+  [CellErrorType.NAME]: 5,
+  [CellErrorType.NUM]: 6,
+  [CellErrorType.NA]: 7,
+  [CellErrorType.SPILL]: 9,
+};
+
 export const informationFunctions: RegisteredFunction[] = [
   inspector('ISBLANK', (value) => value === EmptyValue),
   inspector('ISNUMBER', (value) => typeof value === 'number'),
@@ -40,4 +52,49 @@ export const informationFunctions: RegisteredFunction[] = [
   inspector('ISNA', (value) => value instanceof CellError && value.type === CellErrorType.NA),
   parityCheck('ISEVEN'),
   parityCheck('ISODD'),
+  {
+    metadata: { name: 'NA', minArgs: 0, maxArgs: 0 },
+    fn: () => new CellError(CellErrorType.NA),
+  },
+  {
+    // N: numbers pass through, booleans become 1/0, text and empties 0.
+    metadata: { name: 'N', minArgs: 1, maxArgs: 1 },
+    fn: (args: RawInterpreterValue[]) => {
+      const value = args[0]!;
+      if (value instanceof CellError) {
+        return value;
+      }
+      if (typeof value === 'number') {
+        return value;
+      }
+      if (typeof value === 'boolean') {
+        return value ? 1 : 0;
+      }
+      return 0;
+    },
+  },
+  {
+    // T: text passes through, everything else (but errors) becomes "".
+    metadata: { name: 'T', minArgs: 1, maxArgs: 1 },
+    fn: (args: RawInterpreterValue[]) => {
+      const value = args[0]!;
+      if (value instanceof CellError) {
+        return value;
+      }
+      return typeof value === 'string' ? value : '';
+    },
+  },
+  {
+    metadata: { name: 'ERROR.TYPE', minArgs: 1, maxArgs: 1 },
+    fn: (args: RawInterpreterValue[]) => {
+      const value = args[0]!;
+      if (!(value instanceof CellError)) {
+        return new CellError(CellErrorType.NA, 'ERROR.TYPE needs an error value');
+      }
+      return (
+        ERROR_TYPE_CODES[value.type] ??
+        new CellError(CellErrorType.NA, `No ERROR.TYPE code for ${value.type}`)
+      );
+    },
+  },
 ];

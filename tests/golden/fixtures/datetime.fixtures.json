@@ -166,5 +166,73 @@
   {
     "formula": "=DATEDIF(DATE(2001,1,1),DATE(2003,1,1),\"X\")",
     "expected": "#NUM!"
+  },
+  {
+    "formula": "=TIME(6,0,0)",
+    "expected": 0.25
+  },
+  {
+    "formula": "=TIME(12,30,15)",
+    "expected": 0.5210069444444444
+  },
+  {
+    "formula": "=TIME(1,90,0)=TIME(2,30,0)",
+    "expected": true
+  },
+  {
+    "formula": "=TIME(27,0,0)",
+    "expected": 0.125
+  },
+  {
+    "formula": "=TIME(0,0,-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=HOUR(0.75)",
+    "expected": 18
+  },
+  {
+    "formula": "=HOUR(39448.5)",
+    "expected": 12
+  },
+  {
+    "formula": "=MINUTE(TIME(9,45,30))",
+    "expected": 45
+  },
+  {
+    "formula": "=SECOND(TIME(9,45,30))",
+    "expected": 30
+  },
+  {
+    "formula": "=HOUR(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1))",
+    "expected": 3
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1),2)",
+    "expected": 2
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1),3)",
+    "expected": 1
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2026,6,11))",
+    "expected": 5
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1),11)",
+    "expected": 2
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1),17)",
+    "expected": 3
+  },
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1),4)",
+    "expected": "#NUM!"
   }
 ]

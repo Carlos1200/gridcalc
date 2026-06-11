@@ -5,7 +5,10 @@
   "=IF(0,\"yes\",\"no\")",
   "=IF(1>2,\"yes\")",
   "=IF(1<2,,9)",
-  { "formula": "=IF(A1,\"yes\",\"no\")", "inputs": {} },
+  {
+    "formula": "=IF(A1,\"yes\",\"no\")",
+    "inputs": {}
+  },
   "=IF(\"abc\",1,2)",
   "=IF(1/0,1,2)",
   "=IF(TRUE,7,1/0)",
@@ -16,19 +19,63 @@
   "=AND(TRUE,FALSE)",
   "=AND(1,1)",
   "=AND(FALSE,1/0)",
-  { "formula": "=AND(A1:A3)", "inputs": { "A1": true, "A2": true, "A3": false } },
-  { "formula": "=AND(A1:A3,TRUE)", "inputs": { "A1": true, "A2": "text" } },
+  {
+    "formula": "=AND(A1:A3)",
+    "inputs": {
+      "A1": true,
+      "A2": true,
+      "A3": false
+    }
+  },
+  {
+    "formula": "=AND(A1:A3,TRUE)",
+    "inputs": {
+      "A1": true,
+      "A2": "text"
+    }
+  },
   "=AND(\"abc\",TRUE)",
   "=OR(FALSE,FALSE)",
   "=OR(FALSE,TRUE)",
   "=OR(0,0)",
   "=OR(TRUE,1/0)",
-  { "formula": "=OR(A1:A3)", "inputs": { "A1": false, "A2": false, "A3": true } },
+  {
+    "formula": "=OR(A1:A3)",
+    "inputs": {
+      "A1": false,
+      "A2": false,
+      "A3": true
+    }
+  },
   "=NOT(TRUE)",
   "=NOT(0)",
   "=NOT(\"abc\")",
   "=IFERROR(1/0,\"caught\")",
   "=IFERROR(42,\"caught\")",
   "=IFERROR(SQRT(-1),-1)",
-  "=IFERROR(1/0,1/0)"
+  "=IFERROR(1/0,1/0)",
+  "=XOR(TRUE,FALSE)",
+  "=XOR(TRUE,TRUE)",
+  "=XOR(TRUE,TRUE,TRUE)",
+  "=XOR(0,3)",
+  "=XOR(FALSE,1/0)",
+  "=TRUE()",
+  "=FALSE()",
+  "=IFNA(MATCH(9,A1:A2,0),42)",
+  {
+    "formula": "=IFNA(1/0,42)",
+    "expected": "#DIV/0!"
+  },
+  "=IFNA(7,42)",
+  "=SWITCH(2,1,\"a\",2,\"b\",3,\"c\")",
+  "=SWITCH(9,1,\"a\",\"default\")",
+  {
+    "formula": "=SWITCH(9,1,\"a\")",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=SWITCH(\"B\",\"b\",1,2)",
+    "expected": 1
+  },
+  "=SWITCH(1,1,1/0,2)"
 ]

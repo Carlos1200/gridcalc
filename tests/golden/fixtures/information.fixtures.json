@@ -186,5 +186,53 @@
   {
     "formula": "=ISODD(4)",
     "expected": false
+  },
+  {
+    "formula": "=N(7)",
+    "expected": 7
+  },
+  {
+    "formula": "=N(TRUE)",
+    "expected": 1
+  },
+  {
+    "formula": "=N(\"7\")",
+    "expected": 0
+  },
+  {
+    "formula": "=N(1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=T(\"abc\")",
+    "expected": "abc"
+  },
+  {
+    "formula": "=T(7)",
+    "expected": ""
+  },
+  {
+    "formula": "=T(TRUE)",
+    "expected": ""
+  },
+  {
+    "formula": "=NA()",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=ERROR.TYPE(1/0)",
+    "expected": 2
+  },
+  {
+    "formula": "=ERROR.TYPE(NA())",
+    "expected": 7
+  },
+  {
+    "formula": "=ERROR.TYPE(SQRT(-1))",
+    "expected": 6
+  },
+  {
+    "formula": "=ERROR.TYPE(42)",
+    "expected": "#N/A"
   }
 ]

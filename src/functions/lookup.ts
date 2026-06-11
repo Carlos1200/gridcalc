@@ -68,6 +68,43 @@ function materializeCell(value: RawInterpreterValue | undefined): RawInterpreter
   return scalar === EmptyValue ? 0 : scalar;
 }
 
+/**
+ * ROW/COLUMN report positions (1-based) without evaluating their argument:
+ * lazy so the reference itself is inspected, not its value. With no argument
+ * they answer for the cell holding the formula.
+ */
+function rowColumn(name: 'ROW' | 'COLUMN'): RegisteredFunction {
+  const pick = (position: { col: number; row: number }): number =>
+    (name === 'ROW' ? position.row : position.col) + 1;
+  return {
+    metadata: { name, minArgs: 0, maxArgs: 1, argHandling: 'lazy' },
+    fn: (args: Ast[], context: EvaluationContext) => {
+      const target = args[0];
+      if (target === undefined) {
+        return pick(context.formulaAddress);
+      }
+      if (target.type === 'CELL_REFERENCE') {
+        return pick(target.reference);
+      }
+      if (target.type === 'RANGE_REFERENCE') {
+        return pick(target.start); // top-left corner (arrays are phase 3)
+      }
+      return new CellError(CellErrorType.VALUE, `${name} needs a reference`);
+    },
+  };
+}
+
+/** ROWS/COLUMNS measure a range; values inside are irrelevant. */
+function dimension(name: 'ROWS' | 'COLUMNS'): RegisteredFunction {
+  return {
+    metadata: { name, minArgs: 1, maxArgs: 1, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const matrix = asMatrix(args[0]!);
+      return name === 'ROWS' ? matrix.length : (matrix[0]?.length ?? 0);
+    },
+  };
+}
+
 /** VLOOKUP and HLOOKUP differ only in orientation. */
 function vhLookup(name: 'VLOOKUP' | 'HLOOKUP'): RegisteredFunction {
   const vertical = name === 'VLOOKUP';
@@ -207,6 +244,10 @@ export const lookupFunctions: RegisteredFunction[] = [
       return result === EmptyValue ? 0 : result;
     },
   },
+  rowColumn('ROW'),
+  rowColumn('COLUMN'),
+  dimension('ROWS'),
+  dimension('COLUMNS'),
   {
     metadata: { name: 'LOOKUP', minArgs: 2, maxArgs: 3, argHandling: 'range-aware' },
     fn: (args: RawInterpreterValue[]) => {

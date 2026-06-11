@@ -94,7 +94,16 @@
   - text: SUBSTITUTE, REPLACE, FIND (case-sensitive; `FIND("",x)`→1 con `expected` manual, LO da `#VALUE!`), SEARCH (case-insensitive + comodines, `expected` manual porque LO los trae desactivados), REPT (tope 32767), TEXTJOIN (vía `COM.MICROSOFT.TEXTJOIN` en el generador)
   - lookup: CHOOSE (lazy: `=CHOOSE(1,2,1/0)`→2), LOOKUP (forma vector y forma array ancha/alta)
   - El lexer ahora acepta letras Unicode en identificadores (`=AÑO(...)`); las refs de celda siguen siendo ASCII vía su parser
-- [ ] Seguir subiendo hacia ~150 ← SIGUIENTE PASO (TRUNC/SIGN/EXP/LN/LOG/LOG10/PI/EVEN/ODD/SQRTPI, MEDIAN/MODE/STDEV/VAR/LARGE/SMALL/RANK/COUNTBLANK, PROPER/EXACT/CHAR/CODE/CONCATENATE/CLEAN, TIME/HOUR/MINUTE/SECOND/WEEKDAY/WEEKNUM/WORKDAY/NETWORKDAYS, OFFSET/INDIRECT/ROW/COLUMN/ROWS/COLUMNS, XOR/TRUE/FALSE/IFNA/SWITCH, NA/ISREF/ERROR.TYPE/N/T...)
+- [x] Segunda tanda de expansión: **107 funciones totales** (2026-06-11), todas con golden y nombre es
+  - math: TRUNC, SIGN, EXP, LN, LOG, LOG10, PI, EVEN, ODD
+  - statistical: MEDIAN, MODE (empate → el primero visto), STDEV/VAR (muestrales, <2 números → `#DIV/0!`), LARGE/SMALL, RANK (valor ausente → `#N/A`), COUNTBLANK (cuenta vacías y `""`)
+  - logical: XOR (impar de TRUEs), TRUE/FALSE, IFNA, SWITCH (lazy; comparación de texto case-insensitive fijada a Excel con `expected` manual; vía `COM.MICROSOFT.SWITCH` en el generador)
+  - information: NA, N, T, ERROR.TYPE (códigos Excel 1-7 + SPILL→9; errores propios del motor → `#N/A`)
+  - datetime: TIME (normaliza componentes y da la vuelta a medianoche: `TIME(27,0,0)`→0.125 fijado a Excel, LO devuelve >1; LO exporta el resultado formateado como hora → `expected` manual numérico), HOUR/MINUTE/SECOND, WEEKDAY (tipos 1/2/3/11-17)
+  - text: PROPER, EXACT, CHAR/CODE (1-255, Excel; LO acepta >255 → `expected` manual), CONCATENATE (legacy, solo escalares), CLEAN
+  - lookup: ROW/COLUMN (lazy, inspeccionan la referencia sin evaluarla; sin argumento responden por la celda de la fórmula — unit test, no golden: el harness evalúa en ZZ10000), ROWS/COLUMNS
+  - Divergencia extra: `ERROR.TYPE(SQRT(-1))` en LO da `#N/A` (su SQRT(-1) es Err:502); fijado a 6 (`#NUM!` Excel)
+- [ ] Seguir subiendo hacia ~150 ← SIGUIENTE PASO (GCD/LCM/SQRTPI/COMBIN/FACT/RADIANS/DEGREES/SIN/COS/TAN..., WEEKNUM/WORKDAY/NETWORKDAYS/DAYS/DAYS360/YEARFRAC, OFFSET/INDIRECT (volátiles, tocan grafo de dependencias — quizá Fase 3), ISREF, TYPE, CELL/INFO (subset), DOLLAR/FIXED, UNICHAR/UNICODE, MAXIFS/MINIFS, PERCENTILE/QUARTILE, ROMAN/ARABIC...)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

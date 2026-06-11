@@ -163,5 +163,34 @@
   {
     "formula": "=TEXTJOIN(\"-\",TRUE,TRUE,1)",
     "expected": "TRUE-1"
-  }
+  },
+  "=PROPER(\"hello world\")",
+  "=PROPER(\"2-cent's\")",
+  "=PROPER(\"MIXED case\")",
+  "=EXACT(\"a\",\"a\")",
+  "=EXACT(\"a\",\"A\")",
+  "=EXACT(1,\"1\")",
+  "=CHAR(65)",
+  {
+    "formula": "=CHAR(0)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=CHAR(256)",
+    "expected": "#VALUE!"
+  },
+  "=CODE(\"A\")",
+  "=CODE(\"abc\")",
+  {
+    "formula": "=CODE(\"\")",
+    "expected": "#VALUE!"
+  },
+  "=CONCATENATE(\"a\",1)",
+  {
+    "formula": "=CONCATENATE(\"a\",1,TRUE)",
+    "expected": "a1TRUE"
+  },
+  "=CONCATENATE(\"a\",1/0)",
+  "=CLEAN(\"abc\"&CHAR(10)&\"def\")",
+  "=CLEAN(CHAR(7)&\"x\")"
 ]

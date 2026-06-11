@@ -141,5 +141,65 @@
   {
     "formula": "=IFERROR(1/0,1/0)",
     "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=XOR(TRUE,FALSE)",
+    "expected": true
+  },
+  {
+    "formula": "=XOR(TRUE,TRUE)",
+    "expected": false
+  },
+  {
+    "formula": "=XOR(TRUE,TRUE,TRUE)",
+    "expected": true
+  },
+  {
+    "formula": "=XOR(0,3)",
+    "expected": true
+  },
+  {
+    "formula": "=XOR(FALSE,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=TRUE()",
+    "expected": true
+  },
+  {
+    "formula": "=FALSE()",
+    "expected": false
+  },
+  {
+    "formula": "=IFNA(MATCH(9,A1:A2,0),42)",
+    "expected": 42
+  },
+  {
+    "formula": "=IFNA(1/0,42)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=IFNA(7,42)",
+    "expected": 7
+  },
+  {
+    "formula": "=SWITCH(2,1,\"a\",2,\"b\",3,\"c\")",
+    "expected": "b"
+  },
+  {
+    "formula": "=SWITCH(9,1,\"a\",\"default\")",
+    "expected": "default"
+  },
+  {
+    "formula": "=SWITCH(9,1,\"a\")",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=SWITCH(\"B\",\"b\",1,2)",
+    "expected": 1
+  },
+  {
+    "formula": "=SWITCH(1,1,1/0,2)",
+    "expected": "#DIV/0!"
   }
 ]

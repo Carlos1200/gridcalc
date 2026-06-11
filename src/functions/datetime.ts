@@ -1,6 +1,6 @@
-/** Date & time functions: TODAY, NOW, DATE, YEAR/MONTH/DAY, EDATE/EOMONTH, DATEDIF. */
+/** Date & time functions: TODAY/NOW, DATE/TIME, date and time fields, WEEKDAY, EDATE/EOMONTH, DATEDIF. */
 
-import { dateToSerial, serialToDate, timeToFraction, type SimpleDate } from '../value/dates';
+import { dateToSerial, fractionToTime, serialToDate, timeToFraction, type SimpleDate, type SimpleTime } from '../value/dates';
 import { CellError, CellErrorType, type RawInterpreterValue } from '../value/types';
 import type { EvaluationContext } from '../evaluator/context';
 import { asNumber, asString } from './helpers';
@@ -78,6 +78,23 @@ function dateField(name: string, pick: (date: SimpleDate) => number): Registered
   };
 }
 
+/** One time-of-day field (hour/minute/second) of a serial number's fraction. */
+function timeField(name: string, pick: (time: SimpleTime) => number): RegisteredFunction {
+  return {
+    metadata: { name, minArgs: 1, maxArgs: 1 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      if (n < 0) {
+        return new CellError(CellErrorType.NUM, `${name} serial cannot be negative`);
+      }
+      return pick(fractionToTime(n));
+    },
+  };
+}
+
 export const datetimeFunctions: RegisteredFunction[] = [
   {
     metadata: { name: 'TODAY', minArgs: 0, maxArgs: 0, volatile: true },
@@ -137,6 +154,65 @@ export const datetimeFunctions: RegisteredFunction[] = [
   dateField('YEAR', (date) => date.year),
   dateField('MONTH', (date) => date.month),
   dateField('DAY', (date) => date.day),
+  timeField('HOUR', (time) => time.hours),
+  timeField('MINUTE', (time) => time.minutes),
+  timeField('SECOND', (time) => time.seconds),
+  {
+    metadata: { name: 'TIME', minArgs: 3, maxArgs: 3 },
+    fn: (args: RawInterpreterValue[]) => {
+      const parts: number[] = [];
+      for (const arg of args) {
+        const n = asNumber(arg);
+        if (n instanceof CellError) {
+          return n;
+        }
+        parts.push(Math.trunc(n));
+      }
+      // Components normalize (TIME(1,90,0) = 2:30) and wrap past midnight.
+      const totalSeconds = parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
+      if (totalSeconds < 0) {
+        return new CellError(CellErrorType.NUM, 'TIME is before midnight');
+      }
+      return (totalSeconds % 86400) / 86400;
+    },
+  },
+  {
+    metadata: { name: 'WEEKDAY', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const serialNum = asNumber(args[0]!);
+      if (serialNum instanceof CellError) {
+        return serialNum;
+      }
+      const serial = Math.floor(serialNum);
+      if (serial < 0) {
+        return new CellError(CellErrorType.NUM, 'WEEKDAY serial cannot be negative');
+      }
+      let type = 1;
+      if (args.length > 1) {
+        const typeNum = asNumber(args[1]!);
+        if (typeNum instanceof CellError) {
+          return typeNum;
+        }
+        type = Math.trunc(typeNum);
+      }
+      // Serial 1 is a Sunday in Excel's calendar (1900-01-01, leap bug included).
+      if (type === 1) {
+        const day = serial % 7;
+        return day === 0 ? 7 : day;
+      }
+      if (type === 2) {
+        return ((serial + 5) % 7) + 1;
+      }
+      if (type === 3) {
+        return (serial + 5) % 7;
+      }
+      if (type >= 11 && type <= 17) {
+        // 11..17 start the week on Monday..Sunday.
+        return ((serial + 5 - (type - 11) + 7) % 7) + 1;
+      }
+      return new CellError(CellErrorType.NUM, `Unknown WEEKDAY type ${type}`);
+    },
+  },
   monthShifter('EDATE'),
   monthShifter('EOMONTH'),
   {

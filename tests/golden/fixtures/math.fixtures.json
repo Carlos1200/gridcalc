@@ -366,5 +366,129 @@
   {
     "formula": "=SUMPRODUCT(1/0)",
     "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=TRUNC(8.9)",
+    "expected": 8
+  },
+  {
+    "formula": "=TRUNC(-8.9)",
+    "expected": -8
+  },
+  {
+    "formula": "=TRUNC(3.14159,2)",
+    "expected": 3.14
+  },
+  {
+    "formula": "=TRUNC(1234.567,-2)",
+    "expected": 1200
+  },
+  {
+    "formula": "=TRUNC(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SIGN(-5)",
+    "expected": -1
+  },
+  {
+    "formula": "=SIGN(0)",
+    "expected": 0
+  },
+  {
+    "formula": "=SIGN(3.2)",
+    "expected": 1
+  },
+  {
+    "formula": "=SIGN(1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=EXP(1)",
+    "expected": 2.71828182845905
+  },
+  {
+    "formula": "=EXP(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=EXP(1000)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LN(EXP(2))",
+    "expected": 2
+  },
+  {
+    "formula": "=LN(0)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LN(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LOG(8,2)",
+    "expected": 3
+  },
+  {
+    "formula": "=LOG(100)",
+    "expected": 2
+  },
+  {
+    "formula": "=LOG(8,1)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=LOG(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LOG10(100)",
+    "expected": 2
+  },
+  {
+    "formula": "=PI()",
+    "expected": 3.14159265358979
+  },
+  {
+    "formula": "=EVEN(1.5)",
+    "expected": 2
+  },
+  {
+    "formula": "=EVEN(3)",
+    "expected": 4
+  },
+  {
+    "formula": "=EVEN(2)",
+    "expected": 2
+  },
+  {
+    "formula": "=EVEN(-1)",
+    "expected": -2
+  },
+  {
+    "formula": "=EVEN(0)",
+    "expected": 0
+  },
+  {
+    "formula": "=ODD(1.5)",
+    "expected": 3
+  },
+  {
+    "formula": "=ODD(3)",
+    "expected": 3
+  },
+  {
+    "formula": "=ODD(2)",
+    "expected": 3
+  },
+  {
+    "formula": "=ODD(-2)",
+    "expected": -3
+  },
+  {
+    "formula": "=ODD(0)",
+    "expected": 1
   }
 ]

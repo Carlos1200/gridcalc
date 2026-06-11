@@ -67,5 +67,40 @@
   {
     "formula": "=DATEDIF(DATE(2001,1,1),DATE(2003,1,1),\"X\")",
     "expected": "#NUM!"
+  },
+  {
+    "formula": "=TIME(6,0,0)",
+    "expected": 0.25
+  },
+  {
+    "formula": "=TIME(12,30,15)",
+    "expected": 0.5210069444444444
+  },
+  "=TIME(1,90,0)=TIME(2,30,0)",
+  {
+    "formula": "=TIME(27,0,0)",
+    "expected": 0.125
+  },
+  {
+    "formula": "=TIME(0,0,-1)",
+    "expected": "#NUM!"
+  },
+  "=HOUR(0.75)",
+  "=HOUR(39448.5)",
+  "=MINUTE(TIME(9,45,30))",
+  "=SECOND(TIME(9,45,30))",
+  {
+    "formula": "=HOUR(-1)",
+    "expected": "#NUM!"
+  },
+  "=WEEKDAY(DATE(2008,1,1))",
+  "=WEEKDAY(DATE(2008,1,1),2)",
+  "=WEEKDAY(DATE(2008,1,1),3)",
+  "=WEEKDAY(DATE(2026,6,11))",
+  "=WEEKDAY(DATE(2008,1,1),11)",
+  "=WEEKDAY(DATE(2008,1,1),17)",
+  {
+    "formula": "=WEEKDAY(DATE(2008,1,1),4)",
+    "expected": "#NUM!"
   }
 ]

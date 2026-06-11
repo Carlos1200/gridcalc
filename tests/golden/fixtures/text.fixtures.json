@@ -305,5 +305,73 @@
   {
     "formula": "=TEXTJOIN(\"-\",TRUE,TRUE,1)",
     "expected": "TRUE-1"
+  },
+  {
+    "formula": "=PROPER(\"hello world\")",
+    "expected": "Hello World"
+  },
+  {
+    "formula": "=PROPER(\"2-cent's\")",
+    "expected": "2-Cent'S"
+  },
+  {
+    "formula": "=PROPER(\"MIXED case\")",
+    "expected": "Mixed Case"
+  },
+  {
+    "formula": "=EXACT(\"a\",\"a\")",
+    "expected": true
+  },
+  {
+    "formula": "=EXACT(\"a\",\"A\")",
+    "expected": false
+  },
+  {
+    "formula": "=EXACT(1,\"1\")",
+    "expected": true
+  },
+  {
+    "formula": "=CHAR(65)",
+    "expected": "A"
+  },
+  {
+    "formula": "=CHAR(0)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=CHAR(256)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=CODE(\"A\")",
+    "expected": 65
+  },
+  {
+    "formula": "=CODE(\"abc\")",
+    "expected": 97
+  },
+  {
+    "formula": "=CODE(\"\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=CONCATENATE(\"a\",1)",
+    "expected": "a1"
+  },
+  {
+    "formula": "=CONCATENATE(\"a\",1,TRUE)",
+    "expected": "a1TRUE"
+  },
+  {
+    "formula": "=CONCATENATE(\"a\",1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=CLEAN(\"abc\"&CHAR(10)&\"def\")",
+    "expected": "abcdef"
+  },
+  {
+    "formula": "=CLEAN(CHAR(7)&\"x\")",
+    "expected": "x"
   }
 ]

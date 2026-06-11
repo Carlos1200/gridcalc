@@ -318,5 +318,13 @@
       "C2": "c"
     }
   },
-  "=LOOKUP(1/0,A1:A2,B1:B2)"
+  "=LOOKUP(1/0,A1:A2,B1:B2)",
+  "=ROW(B5)",
+  "=ROW(A3:C7)",
+  "=COLUMN(B5)",
+  "=COLUMN(C3:D7)",
+  "=ROWS(A1:B3)",
+  "=ROWS(A1)",
+  "=COLUMNS(A1:B3)",
+  "=COLUMNS(A1:A10)"
 ]

@@ -365,5 +365,164 @@
       "B2": 20
     },
     "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=MEDIAN(1,2,3)",
+    "expected": 2
+  },
+  {
+    "formula": "=MEDIAN(1,2,3,4)",
+    "expected": 2.5
+  },
+  {
+    "formula": "=MEDIAN(A1:A5)",
+    "inputs": {
+      "A1": 5,
+      "A2": 1,
+      "A3": "text",
+      "A4": 3,
+      "A5": 4
+    },
+    "expected": 3.5
+  },
+  {
+    "formula": "=MEDIAN(1,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=MODE(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 2,
+      "A4": 3
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=MODE(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=STDEV(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 6
+    },
+    "expected": 1.63299316185545
+  },
+  {
+    "formula": "=STDEV(5)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=VAR(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 6
+    },
+    "expected": 2.66666666666667
+  },
+  {
+    "formula": "=LARGE(A1:A4,2)",
+    "inputs": {
+      "A1": 3,
+      "A2": 5,
+      "A3": 3,
+      "A4": 1
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=LARGE(A1:A4,5)",
+    "inputs": {
+      "A1": 3,
+      "A2": 5,
+      "A3": 3,
+      "A4": 1
+    },
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LARGE(A1:A4,0)",
+    "inputs": {
+      "A1": 3,
+      "A2": 5,
+      "A3": 3,
+      "A4": 1
+    },
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=SMALL(A1:A4,1)",
+    "inputs": {
+      "A1": 3,
+      "A2": 5,
+      "A3": 3,
+      "A4": 1
+    },
+    "expected": 1
+  },
+  {
+    "formula": "=SMALL(A1:A4,2)",
+    "inputs": {
+      "A1": 3,
+      "A2": 5,
+      "A3": 3,
+      "A4": 1
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=RANK(3,A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=RANK(3,A1:A4,1)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=RANK(9,A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=COUNTBLANK(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A4": 2
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=COUNTBLANK(B1:B3)",
+    "inputs": {},
+    "expected": 3
   }
 ]

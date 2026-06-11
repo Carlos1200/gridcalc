@@ -210,5 +210,51 @@
     },
     "expected": "#VALUE!"
   },
-  "=SUMPRODUCT(1/0)"
+  "=SUMPRODUCT(1/0)",
+  "=TRUNC(8.9)",
+  "=TRUNC(-8.9)",
+  "=TRUNC(3.14159,2)",
+  "=TRUNC(1234.567,-2)",
+  "=TRUNC(\"abc\")",
+  "=SIGN(-5)",
+  "=SIGN(0)",
+  "=SIGN(3.2)",
+  "=SIGN(1/0)",
+  "=EXP(1)",
+  "=EXP(0)",
+  {
+    "formula": "=EXP(1000)",
+    "expected": "#NUM!"
+  },
+  "=LN(EXP(2))",
+  {
+    "formula": "=LN(0)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LN(-1)",
+    "expected": "#NUM!"
+  },
+  "=LOG(8,2)",
+  "=LOG(100)",
+  {
+    "formula": "=LOG(8,1)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=LOG(-1)",
+    "expected": "#NUM!"
+  },
+  "=LOG10(100)",
+  "=PI()",
+  "=EVEN(1.5)",
+  "=EVEN(3)",
+  "=EVEN(2)",
+  "=EVEN(-1)",
+  "=EVEN(0)",
+  "=ODD(1.5)",
+  "=ODD(3)",
+  "=ODD(2)",
+  "=ODD(-2)",
+  "=ODD(0)"
 ]
