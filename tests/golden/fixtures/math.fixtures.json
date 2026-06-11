@@ -210,5 +210,161 @@
   {
     "formula": "=4.1-4.2+0.1",
     "expected": -5.27355936696949e-16
+  },
+  {
+    "formula": "=PRODUCT(2,3,4)",
+    "expected": 24
+  },
+  {
+    "formula": "=PRODUCT(0.1,0.2)",
+    "expected": 0.02
+  },
+  {
+    "formula": "=PRODUCT(\"2\",3)",
+    "expected": 6
+  },
+  {
+    "formula": "=PRODUCT(TRUE,5)",
+    "expected": 5
+  },
+  {
+    "formula": "=PRODUCT(2,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=PRODUCT(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": "text",
+      "A3": true,
+      "A4": 3
+    },
+    "expected": 6
+  },
+  {
+    "formula": "=PRODUCT(A1:A2)",
+    "inputs": {
+      "A1": "a",
+      "A2": "b"
+    },
+    "expected": 0
+  },
+  {
+    "formula": "=CEILING(2.5,1)",
+    "expected": 3
+  },
+  {
+    "formula": "=CEILING(-2.5,-2)",
+    "expected": -4
+  },
+  {
+    "formula": "=CEILING(-2.5,2)",
+    "expected": -2
+  },
+  {
+    "formula": "=CEILING(1.5,0.1)",
+    "expected": 1.5
+  },
+  {
+    "formula": "=CEILING(0.234,0.01)",
+    "expected": 0.24
+  },
+  {
+    "formula": "=CEILING(2.5,0)",
+    "expected": 0
+  },
+  {
+    "formula": "=CEILING(2.5,-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=CEILING(\"abc\",1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FLOOR(2.5,1)",
+    "expected": 2
+  },
+  {
+    "formula": "=FLOOR(-2.5,-2)",
+    "expected": -2
+  },
+  {
+    "formula": "=FLOOR(-2.5,2)",
+    "expected": -4
+  },
+  {
+    "formula": "=FLOOR(1.58,0.1)",
+    "expected": 1.5
+  },
+  {
+    "formula": "=FLOOR(2.5,0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=FLOOR(2.5,-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 4,
+      "B2": 5,
+      "B3": 6
+    },
+    "expected": 32
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:B2,C1:D2)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "C1": 5,
+      "D1": 6,
+      "C2": 7,
+      "D2": 8
+    },
+    "expected": 70
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    },
+    "expected": 6
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": "x",
+      "A3": 3,
+      "B1": 2,
+      "B2": 5,
+      "B3": 4
+    },
+    "expected": 14
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A2,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "B1": 1,
+      "B2": 2,
+      "B3": 3
+    },
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SUMPRODUCT(1/0)",
+    "expected": "#DIV/0!"
   }
 ]

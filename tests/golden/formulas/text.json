@@ -85,5 +85,83 @@
   {
     "formula": "=TEXT(5,\"General\")",
     "expected": "5"
+  },
+  "=FIND(\"b\",\"abcabc\")",
+  "=FIND(\"b\",\"abcabc\",3)",
+  {
+    "formula": "=FIND(\"B\",\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FIND(\"\",\"abc\")",
+    "expected": 1
+  },
+  {
+    "formula": "=FIND(\"x\",\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FIND(\"a\",\"abc\",0)",
+    "expected": "#VALUE!"
+  },
+  "=FIND(1,123)",
+  "=SEARCH(\"B\",\"abc\")",
+  "=SEARCH(\"b\",\"abcabc\",4)",
+  {
+    "formula": "=SEARCH(\"c?n\",\"docena\")",
+    "expected": 3
+  },
+  {
+    "formula": "=SEARCH(\"o*a\",\"docena\")",
+    "expected": 2
+  },
+  {
+    "formula": "=SEARCH(\"x\",\"abc\")",
+    "expected": "#VALUE!"
+  },
+  "=SUBSTITUTE(\"banana\",\"a\",\"o\")",
+  "=SUBSTITUTE(\"banana\",\"a\",\"o\",2)",
+  "=SUBSTITUTE(\"banana\",\"x\",\"o\")",
+  "=SUBSTITUTE(\"banana\",\"a\",\"o\",5)",
+  "=SUBSTITUTE(\"Rate\",\"R\",\"r\")",
+  "=SUBSTITUTE(\"Rate\",\"r\",\"x\",1)",
+  {
+    "formula": "=SUBSTITUTE(\"banana\",\"a\",\"o\",0)",
+    "expected": "#VALUE!"
+  },
+  "=REPLACE(\"abcdef\",2,3,\"X\")",
+  "=REPLACE(\"abc\",1,0,\"X\")",
+  "=REPLACE(\"abc\",5,2,\"X\")",
+  {
+    "formula": "=REPLACE(\"abc\",0,1,\"X\")",
+    "expected": "#VALUE!"
+  },
+  "=REPT(\"ab\",3)",
+  "=REPT(\"ab\",2.5)",
+  "=REPT(\"a\",0)",
+  {
+    "formula": "=REPT(\"a\",-1)",
+    "expected": "#VALUE!"
+  },
+  "=TEXTJOIN(\"-\",TRUE,\"a\",\"b\",\"c\")",
+  {
+    "formula": "=TEXTJOIN(\",\",TRUE,A1:A4)",
+    "inputs": {
+      "A1": "a",
+      "A3": "c",
+      "A4": 1
+    }
+  },
+  {
+    "formula": "=TEXTJOIN(\",\",FALSE,A1:A3)",
+    "inputs": {
+      "A1": "a",
+      "A3": "c"
+    }
+  },
+  "=TEXTJOIN(\"-\",TRUE,1/0,\"a\")",
+  {
+    "formula": "=TEXTJOIN(\"-\",TRUE,TRUE,1)",
+    "expected": "TRUE-1"
   }
 ]

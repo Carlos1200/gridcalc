@@ -2,7 +2,7 @@
 
 > Documento de seguimiento para sesiones de trabajo. Marcar ítems al completarlos.
 > La especificación completa está en `docs/SPEC.md` (fuente de verdad del diseño).
-> Última actualización: 2026-06-10.
+> Última actualización: 2026-06-11.
 
 ## Decisiones tomadas
 
@@ -86,7 +86,15 @@
   - "Mover" (cut/paste con reescritura de referencias entrantes) queda pendiente para más adelante
 - [x] Traducción de nombres de función en `i18n/`: las 40 funciones con nombres es-ES (`=SUMA`→SUM, `=SI.ERROR`→IFERROR...). El AST siempre lleva el nombre canónico inglés; el parser traduce al entrar y el serializador (y por tanto `copyCell`) emite el localizado. Los nombres canónicos se aceptan en cualquier locale
   - Pendiente de i18n: literales booleanos (`VERDADERO`/`FALSO`) y de error localizados
-- [ ] Subir a ~150 funciones ← SIGUIENTE PASO (PRODUCT, CEILING/FLOOR, SUMPRODUCT, COUNTIFS/SUMIFS/AVERAGEIF(S), familia IS*, fechas YEAR/MONTH/DAY/EDATE/EOMONTH/DATEDIF, texto SUBSTITUTE/REPLACE/FIND/SEARCH/REPT/TEXTJOIN, CHOOSE/LOOKUP...)
+- [x] Primera tanda de expansión: **66 funciones totales** (2026-06-11), todas con golden y nombre es
+  - math: PRODUCT, CEILING, FLOOR, SUMPRODUCT — divergencia LO: con significancia negativa LO intercambia el redondeo de CEILING/FLOOR (`CEILING(-2.5,-2)` LO=-2, Excel=-4) y rechaza signo mixto `(-2.5, 2)` con Err:502; fixtures con `expected` manual a lo Excel
+  - statistical: COUNTIFS, SUMIFS, AVERAGEIF, AVERAGEIFS (rangos de criterio con forma distinta → `#VALUE!`)
+  - information: ISLOGICAL, ISNONTEXT, ISNA, ISERR + ISEVEN/ISODD (estos dos SÍ coercionan y propagan errores, como Excel)
+  - datetime: YEAR/MONTH/DAY (serial 0 → 1900-01-00 estilo Excel con `expected` manual; LO usa epoch 1899-12-30), EDATE/EOMONTH (clamp de fin de mes), DATEDIF (unidades Y/M/D/YM/MD/YD; orden inverso o unidad desconocida → `#NUM!`)
+  - text: SUBSTITUTE, REPLACE, FIND (case-sensitive; `FIND("",x)`→1 con `expected` manual, LO da `#VALUE!`), SEARCH (case-insensitive + comodines, `expected` manual porque LO los trae desactivados), REPT (tope 32767), TEXTJOIN (vía `COM.MICROSOFT.TEXTJOIN` en el generador)
+  - lookup: CHOOSE (lazy: `=CHOOSE(1,2,1/0)`→2), LOOKUP (forma vector y forma array ancha/alta)
+  - El lexer ahora acepta letras Unicode en identificadores (`=AÑO(...)`); las refs de celda siguen siendo ASCII vía su parser
+- [ ] Seguir subiendo hacia ~150 ← SIGUIENTE PASO (TRUNC/SIGN/EXP/LN/LOG/LOG10/PI/EVEN/ODD/SQRTPI, MEDIAN/MODE/STDEV/VAR/LARGE/SMALL/RANK/COUNTBLANK, PROPER/EXACT/CHAR/CODE/CONCATENATE/CLEAN, TIME/HOUR/MINUTE/SECOND/WEEKDAY/WEEKNUM/WORKDAY/NETWORKDAYS, OFFSET/INDIRECT/ROW/COLUMN/ROWS/COLUMNS, XOR/TRUE/FALSE/IFNA/SWITCH, NA/ISREF/ERROR.TYPE/N/T...)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

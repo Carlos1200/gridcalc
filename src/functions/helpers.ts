@@ -95,8 +95,8 @@ export function forEachScalar(
   return undefined;
 }
 
-/** Case-insensitive Excel wildcard match: * = any run, ? = any char, ~ escapes. */
-export function wildcardMatch(pattern: string, text: string): boolean {
+/** Excel wildcard pattern -> regex source: * = any run, ? = any char, ~ escapes. */
+export function wildcardToRegExpSource(pattern: string): string {
   let regex = '';
   for (let i = 0; i < pattern.length; i++) {
     const char = pattern[i]!;
@@ -110,7 +110,12 @@ export function wildcardMatch(pattern: string, text: string): boolean {
       regex += escapeRegExp(char);
     }
   }
-  return new RegExp(`^${regex}$`, 'is').test(text);
+  return regex;
+}
+
+/** Case-insensitive Excel wildcard match of the whole text. */
+export function wildcardMatch(pattern: string, text: string): boolean {
+  return new RegExp(`^${wildcardToRegExpSource(pattern)}$`, 'is').test(text);
 }
 
 function escapeRegExp(char: string): string {

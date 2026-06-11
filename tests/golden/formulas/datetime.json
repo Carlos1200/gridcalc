@@ -13,5 +13,59 @@
   "=TODAY()>=46000",
   "=TODAY()=INT(TODAY())",
   "=NOW()>=TODAY()",
-  "=NOW()-TODAY()<1"
+  "=NOW()-TODAY()<1",
+  "=YEAR(DATE(2008,7,15))",
+  "=YEAR(39448)",
+  "=MONTH(DATE(2008,7,15))",
+  "=DAY(DATE(2008,7,15))",
+  "=DAY(DATE(2008,7,15)+0.75)",
+  {
+    "formula": "=YEAR(0)",
+    "expected": 1900
+  },
+  {
+    "formula": "=MONTH(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=DAY(0)",
+    "expected": 0
+  },
+  {
+    "formula": "=YEAR(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=DAY(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  "=DAY(1/0)",
+  "=EDATE(DATE(2008,1,31),1)=DATE(2008,2,29)",
+  "=EDATE(DATE(2008,3,31),-1)=DATE(2008,2,29)",
+  "=EDATE(DATE(2008,1,15),13)=DATE(2009,2,15)",
+  "=EDATE(DATE(2008,1,15),0)=DATE(2008,1,15)",
+  "=EDATE(DATE(2008,1,15),1.9)=DATE(2008,2,15)",
+  {
+    "formula": "=EDATE(\"abc\",1)",
+    "expected": "#VALUE!"
+  },
+  "=EOMONTH(DATE(2008,2,15),0)=DATE(2008,2,29)",
+  "=EOMONTH(DATE(2008,1,15),1)=DATE(2008,2,29)",
+  "=EOMONTH(DATE(2008,1,15),-2)=DATE(2007,11,30)",
+  "=DATEDIF(DATE(2001,6,1),DATE(2003,8,15),\"Y\")",
+  "=DATEDIF(DATE(2001,6,1),DATE(2003,8,15),\"M\")",
+  "=DATEDIF(DATE(2001,6,1),DATE(2003,8,15),\"D\")",
+  "=DATEDIF(DATE(2001,6,1),DATE(2002,8,15),\"YM\")",
+  "=DATEDIF(DATE(2001,6,20),DATE(2003,8,15),\"YM\")",
+  "=DATEDIF(DATE(2001,6,1),DATE(2002,8,15),\"MD\")",
+  "=DATEDIF(DATE(2001,6,20),DATE(2003,8,15),\"MD\")",
+  "=DATEDIF(DATE(2001,6,1),DATE(2002,8,15),\"YD\")",
+  {
+    "formula": "=DATEDIF(DATE(2003,1,1),DATE(2001,1,1),\"D\")",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,1,1),DATE(2003,1,1),\"X\")",
+    "expected": "#NUM!"
+  }
 ]

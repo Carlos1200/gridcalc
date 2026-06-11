@@ -56,7 +56,9 @@ const SINGLE_CHAR_TOKENS: Readonly<Record<string, TokenType>> = {
 };
 
 const isDigit = (ch: string): boolean => ch >= '0' && ch <= '9';
-const isLetter = (ch: string): boolean => /[A-Za-z]/.test(ch);
+// Any Unicode letter: localized function names and named expressions may
+// carry accents or Ñ (=AÑO(...)); cell references stay ASCII via their parser.
+const isLetter = (ch: string): boolean => /\p{L}/u.test(ch);
 const isWhitespace = (ch: string): boolean => ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
 const isIdentStart = (ch: string): boolean => isLetter(ch) || ch === '_' || ch === '$';
 const isIdentChar = (ch: string): boolean =>

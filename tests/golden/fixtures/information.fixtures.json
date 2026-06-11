@@ -93,5 +93,98 @@
   {
     "formula": "=ISERROR(SQRT(-1))",
     "expected": true
+  },
+  {
+    "formula": "=ISLOGICAL(TRUE)",
+    "expected": true
+  },
+  {
+    "formula": "=ISLOGICAL(1)",
+    "expected": false
+  },
+  {
+    "formula": "=ISLOGICAL(1=1)",
+    "expected": true
+  },
+  {
+    "formula": "=ISLOGICAL(\"TRUE\")",
+    "expected": false
+  },
+  {
+    "formula": "=ISNONTEXT(\"a\")",
+    "expected": false
+  },
+  {
+    "formula": "=ISNONTEXT(1)",
+    "expected": true
+  },
+  {
+    "formula": "=ISNONTEXT(1/0)",
+    "expected": true
+  },
+  {
+    "formula": "=ISNONTEXT(A1)",
+    "inputs": {},
+    "expected": true
+  },
+  {
+    "formula": "=ISNA(1/0)",
+    "expected": false
+  },
+  {
+    "formula": "=ISNA(MATCH(9,A1:A2,0))",
+    "expected": true
+  },
+  {
+    "formula": "=ISERR(1/0)",
+    "expected": true
+  },
+  {
+    "formula": "=ISERR(MATCH(9,A1:A2,0))",
+    "expected": false
+  },
+  {
+    "formula": "=ISERR(42)",
+    "expected": false
+  },
+  {
+    "formula": "=ISEVEN(2)",
+    "expected": true
+  },
+  {
+    "formula": "=ISEVEN(3)",
+    "expected": false
+  },
+  {
+    "formula": "=ISEVEN(2.5)",
+    "expected": true
+  },
+  {
+    "formula": "=ISEVEN(0)",
+    "expected": true
+  },
+  {
+    "formula": "=ISEVEN(-2)",
+    "expected": true
+  },
+  {
+    "formula": "=ISEVEN(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=ISEVEN(1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=ISODD(-3)",
+    "expected": true
+  },
+  {
+    "formula": "=ISODD(2.5)",
+    "expected": false
+  },
+  {
+    "formula": "=ISODD(4)",
+    "expected": false
   }
 ]

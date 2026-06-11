@@ -168,5 +168,142 @@
   {
     "formula": "=TEXT(5,\"General\")",
     "expected": "5"
+  },
+  {
+    "formula": "=FIND(\"b\",\"abcabc\")",
+    "expected": 2
+  },
+  {
+    "formula": "=FIND(\"b\",\"abcabc\",3)",
+    "expected": 5
+  },
+  {
+    "formula": "=FIND(\"B\",\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FIND(\"\",\"abc\")",
+    "expected": 1
+  },
+  {
+    "formula": "=FIND(\"x\",\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FIND(\"a\",\"abc\",0)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FIND(1,123)",
+    "expected": 1
+  },
+  {
+    "formula": "=SEARCH(\"B\",\"abc\")",
+    "expected": 2
+  },
+  {
+    "formula": "=SEARCH(\"b\",\"abcabc\",4)",
+    "expected": 5
+  },
+  {
+    "formula": "=SEARCH(\"c?n\",\"docena\")",
+    "expected": 3
+  },
+  {
+    "formula": "=SEARCH(\"o*a\",\"docena\")",
+    "expected": 2
+  },
+  {
+    "formula": "=SEARCH(\"x\",\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"banana\",\"a\",\"o\")",
+    "expected": "bonono"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"banana\",\"a\",\"o\",2)",
+    "expected": "banona"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"banana\",\"x\",\"o\")",
+    "expected": "banana"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"banana\",\"a\",\"o\",5)",
+    "expected": "banana"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"Rate\",\"R\",\"r\")",
+    "expected": "rate"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"Rate\",\"r\",\"x\",1)",
+    "expected": "Rate"
+  },
+  {
+    "formula": "=SUBSTITUTE(\"banana\",\"a\",\"o\",0)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=REPLACE(\"abcdef\",2,3,\"X\")",
+    "expected": "aXef"
+  },
+  {
+    "formula": "=REPLACE(\"abc\",1,0,\"X\")",
+    "expected": "Xabc"
+  },
+  {
+    "formula": "=REPLACE(\"abc\",5,2,\"X\")",
+    "expected": "abcX"
+  },
+  {
+    "formula": "=REPLACE(\"abc\",0,1,\"X\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=REPT(\"ab\",3)",
+    "expected": "ababab"
+  },
+  {
+    "formula": "=REPT(\"ab\",2.5)",
+    "expected": "abab"
+  },
+  {
+    "formula": "=REPT(\"a\",0)",
+    "expected": ""
+  },
+  {
+    "formula": "=REPT(\"a\",-1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=TEXTJOIN(\"-\",TRUE,\"a\",\"b\",\"c\")",
+    "expected": "a-b-c"
+  },
+  {
+    "formula": "=TEXTJOIN(\",\",TRUE,A1:A4)",
+    "inputs": {
+      "A1": "a",
+      "A3": "c",
+      "A4": 1
+    },
+    "expected": "a,c,1"
+  },
+  {
+    "formula": "=TEXTJOIN(\",\",FALSE,A1:A3)",
+    "inputs": {
+      "A1": "a",
+      "A3": "c"
+    },
+    "expected": "a,,c"
+  },
+  {
+    "formula": "=TEXTJOIN(\"-\",TRUE,1/0,\"a\")",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=TEXTJOIN(\"-\",TRUE,TRUE,1)",
+    "expected": "TRUE-1"
   }
 ]

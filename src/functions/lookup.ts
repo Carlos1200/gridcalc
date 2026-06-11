@@ -1,5 +1,8 @@
-/** Lookup functions: VLOOKUP, HLOOKUP, INDEX, MATCH. */
+/** Lookup functions: VLOOKUP, HLOOKUP, INDEX, MATCH, CHOOSE, LOOKUP. */
 
+import type { Ast } from '../ast/nodes';
+import type { EvaluationContext } from '../evaluator/context';
+import { evaluateAst } from '../evaluator/interpreter';
 import {
   CellError,
   CellErrorType,
@@ -186,6 +189,55 @@ export const lookupFunctions: RegisteredFunction[] = [
       return found === undefined
         ? new CellError(CellErrorType.NA, 'MATCH found no match')
         : found + 1;
+    },
+  },
+  {
+    // Lazy so only the chosen value is evaluated: =CHOOSE(1,2,1/0) is 2.
+    metadata: { name: 'CHOOSE', minArgs: 2, maxArgs: Infinity, argHandling: 'lazy' },
+    fn: (args: Ast[], context: EvaluationContext) => {
+      const indexNum = asNumber(evaluateAst(args[0]!, context));
+      if (indexNum instanceof CellError) {
+        return indexNum;
+      }
+      const index = Math.trunc(indexNum);
+      if (index < 1 || index >= args.length) {
+        return new CellError(CellErrorType.VALUE, `CHOOSE index ${index} is out of range`);
+      }
+      const result = evaluateAst(args[index]!, context);
+      return result === EmptyValue ? 0 : result;
+    },
+  },
+  {
+    metadata: { name: 'LOOKUP', minArgs: 2, maxArgs: 3, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const needle = asScalar(args[0]!);
+      if (needle instanceof CellError) {
+        return needle;
+      }
+      const table = asMatrix(args[1]!);
+      let lookupVector: RawScalarValue[];
+      let resultVector: RawScalarValue[];
+      if (args.length > 2) {
+        // Vector form: both arguments flattened row-major.
+        lookupVector = table.flat().map((cell) => asScalar(cell));
+        resultVector = asMatrix(args[2]!).flat().map((cell) => asScalar(cell));
+      } else if (table.length < (table[0]?.length ?? 0)) {
+        // Array form, wide: search the first row, answer from the last row.
+        lookupVector = table[0]!.map((cell) => asScalar(cell));
+        resultVector = table[table.length - 1]!.map((cell) => asScalar(cell));
+      } else {
+        // Array form, tall or square: first column -> last column.
+        lookupVector = table.map((row) => asScalar(row[0] ?? EmptyValue));
+        resultVector = table.map((row) => asScalar(row[row.length - 1] ?? EmptyValue));
+      }
+      const found = findInVector(lookupVector, needle, true);
+      if (found === undefined) {
+        return new CellError(CellErrorType.NA, 'LOOKUP found no match');
+      }
+      if (found >= resultVector.length) {
+        return new CellError(CellErrorType.REF, 'LOOKUP result vector is too short');
+      }
+      return materializeCell(resultVector[found]);
     },
   },
 ];

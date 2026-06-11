@@ -90,5 +90,125 @@
   "=INT(1/0)",
   "=0.1+0.2=0.3",
   "=(0.1+0.2)-0.3",
-  "=4.1-4.2+0.1"
+  "=4.1-4.2+0.1",
+  "=PRODUCT(2,3,4)",
+  "=PRODUCT(0.1,0.2)",
+  {
+    "formula": "=PRODUCT(\"2\",3)",
+    "expected": 6
+  },
+  "=PRODUCT(TRUE,5)",
+  "=PRODUCT(2,1/0)",
+  {
+    "formula": "=PRODUCT(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": "text",
+      "A3": true,
+      "A4": 3
+    },
+    "expected": 6
+  },
+  {
+    "formula": "=PRODUCT(A1:A2)",
+    "inputs": {
+      "A1": "a",
+      "A2": "b"
+    },
+    "expected": 0
+  },
+  "=CEILING(2.5,1)",
+  {
+    "formula": "=CEILING(-2.5,-2)",
+    "expected": -4
+  },
+  {
+    "formula": "=CEILING(-2.5,2)",
+    "expected": -2
+  },
+  "=CEILING(1.5,0.1)",
+  "=CEILING(0.234,0.01)",
+  {
+    "formula": "=CEILING(2.5,0)",
+    "expected": 0
+  },
+  {
+    "formula": "=CEILING(2.5,-1)",
+    "expected": "#NUM!"
+  },
+  "=CEILING(\"abc\",1)",
+  "=FLOOR(2.5,1)",
+  {
+    "formula": "=FLOOR(-2.5,-2)",
+    "expected": -2
+  },
+  {
+    "formula": "=FLOOR(-2.5,2)",
+    "expected": -4
+  },
+  "=FLOOR(1.58,0.1)",
+  {
+    "formula": "=FLOOR(2.5,0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=FLOOR(2.5,-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 4,
+      "B2": 5,
+      "B3": 6
+    }
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:B2,C1:D2)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "C1": 5,
+      "D1": 6,
+      "C2": 7,
+      "D2": 8
+    }
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3
+    }
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": "x",
+      "A3": 3,
+      "B1": 2,
+      "B2": 5,
+      "B3": 4
+    },
+    "expected": 14
+  },
+  {
+    "formula": "=SUMPRODUCT(A1:A2,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "B1": 1,
+      "B2": 2,
+      "B3": 3
+    },
+    "expected": "#VALUE!"
+  },
+  "=SUMPRODUCT(1/0)"
 ]

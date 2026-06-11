@@ -229,5 +229,94 @@
       "C1": "b",
       "D1": "c"
     }
-  }
+  },
+  "=CHOOSE(2,\"a\",\"b\",\"c\")",
+  "=CHOOSE(1,2,1/0)",
+  "=CHOOSE(2.9,\"a\",\"b\",\"c\")",
+  {
+    "formula": "=CHOOSE(0,\"a\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=CHOOSE(4,\"a\",\"b\",\"c\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=CHOOSE(\"x\",\"a\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=LOOKUP(3,A1:A4,B1:B4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 4,
+      "A4": 8,
+      "B1": "a",
+      "B2": "b",
+      "B3": "c",
+      "B4": "d"
+    }
+  },
+  {
+    "formula": "=LOOKUP(4,A1:A4,B1:B4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 4,
+      "A4": 8,
+      "B1": "a",
+      "B2": "b",
+      "B3": "c",
+      "B4": "d"
+    }
+  },
+  {
+    "formula": "=LOOKUP(0,A1:A4,B1:B4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 4,
+      "A4": 8,
+      "B1": "a",
+      "B2": "b",
+      "B3": "c",
+      "B4": "d"
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=LOOKUP(\"c\",A1:A3,B1:B3)",
+    "inputs": {
+      "A1": "a",
+      "A2": "b",
+      "A3": "d",
+      "B1": 1,
+      "B2": 2,
+      "B3": 3
+    }
+  },
+  {
+    "formula": "=LOOKUP(3,A1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 4,
+      "B1": "a",
+      "B2": "b",
+      "B3": "c"
+    }
+  },
+  {
+    "formula": "=LOOKUP(3,A1:C2)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "C1": 4,
+      "A2": "a",
+      "B2": "b",
+      "C2": "c"
+    }
+  },
+  "=LOOKUP(1/0,A1:A2,B1:B2)"
 ]

@@ -69,6 +69,7 @@ function xmlEscape(text: string): string {
 const ODF_FUNCTION_NAMES: Record<string, string> = {
   IFS: 'COM.MICROSOFT.IFS',
   CONCAT: 'COM.MICROSOFT.CONCAT',
+  TEXTJOIN: 'COM.MICROSOFT.TEXTJOIN',
 };
 
 /**

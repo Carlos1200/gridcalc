@@ -46,5 +46,125 @@
   {
     "formula": "=NOW()-TODAY()<1",
     "expected": true
+  },
+  {
+    "formula": "=YEAR(DATE(2008,7,15))",
+    "expected": 2008
+  },
+  {
+    "formula": "=YEAR(39448)",
+    "expected": 2008
+  },
+  {
+    "formula": "=MONTH(DATE(2008,7,15))",
+    "expected": 7
+  },
+  {
+    "formula": "=DAY(DATE(2008,7,15))",
+    "expected": 15
+  },
+  {
+    "formula": "=DAY(DATE(2008,7,15)+0.75)",
+    "expected": 15
+  },
+  {
+    "formula": "=YEAR(0)",
+    "expected": 1900
+  },
+  {
+    "formula": "=MONTH(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=DAY(0)",
+    "expected": 0
+  },
+  {
+    "formula": "=YEAR(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=DAY(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=DAY(1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=EDATE(DATE(2008,1,31),1)=DATE(2008,2,29)",
+    "expected": true
+  },
+  {
+    "formula": "=EDATE(DATE(2008,3,31),-1)=DATE(2008,2,29)",
+    "expected": true
+  },
+  {
+    "formula": "=EDATE(DATE(2008,1,15),13)=DATE(2009,2,15)",
+    "expected": true
+  },
+  {
+    "formula": "=EDATE(DATE(2008,1,15),0)=DATE(2008,1,15)",
+    "expected": true
+  },
+  {
+    "formula": "=EDATE(DATE(2008,1,15),1.9)=DATE(2008,2,15)",
+    "expected": true
+  },
+  {
+    "formula": "=EDATE(\"abc\",1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=EOMONTH(DATE(2008,2,15),0)=DATE(2008,2,29)",
+    "expected": true
+  },
+  {
+    "formula": "=EOMONTH(DATE(2008,1,15),1)=DATE(2008,2,29)",
+    "expected": true
+  },
+  {
+    "formula": "=EOMONTH(DATE(2008,1,15),-2)=DATE(2007,11,30)",
+    "expected": true
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,1),DATE(2003,8,15),\"Y\")",
+    "expected": 2
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,1),DATE(2003,8,15),\"M\")",
+    "expected": 26
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,1),DATE(2003,8,15),\"D\")",
+    "expected": 805
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,1),DATE(2002,8,15),\"YM\")",
+    "expected": 2
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,20),DATE(2003,8,15),\"YM\")",
+    "expected": 1
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,1),DATE(2002,8,15),\"MD\")",
+    "expected": 14
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,20),DATE(2003,8,15),\"MD\")",
+    "expected": 26
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,6,1),DATE(2002,8,15),\"YD\")",
+    "expected": 75
+  },
+  {
+    "formula": "=DATEDIF(DATE(2003,1,1),DATE(2001,1,1),\"D\")",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=DATEDIF(DATE(2001,1,1),DATE(2003,1,1),\"X\")",
+    "expected": "#NUM!"
   }
 ]

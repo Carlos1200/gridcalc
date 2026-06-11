@@ -1,8 +1,13 @@
-/** Math functions: SUM, ROUND family, ABS, SQRT, POWER, MOD, INT. */
+/** Math functions: SUM, PRODUCT, ROUND family, CEILING/FLOOR, ABS, SQRT, POWER, MOD, INT, SUMPRODUCT. */
 
 import { CellError, CellErrorType, type RawInterpreterValue } from '../value/types';
-import { asNumber, forEachNumber, roundScaled } from './helpers';
+import { asMatrix, asNumber, asScalar, forEachNumber, roundScaled } from './helpers';
 import type { RegisteredFunction } from './types';
+
+/** Snap the quotient to 15 significant digits to undo binary noise before rounding. */
+function cleanQuotient(n: number, significance: number): number {
+  return Number((n / significance).toPrecision(15));
+}
 
 /** One coerced numeric argument. */
 function numeric1(name: string, fn: (x: number) => number | CellError): RegisteredFunction {
@@ -66,4 +71,66 @@ export const mathFunctions: RegisteredFunction[] = [
     return result === 0 ? 0 : result;
   }),
   numeric1('INT', Math.floor),
+  {
+    metadata: { name: 'PRODUCT', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      let product = 1;
+      let sawNumber = false;
+      const error = forEachNumber(args, (n) => {
+        product *= n;
+        sawNumber = true;
+      });
+      // No numbers at all -> 0, like Excel (=PRODUCT(A1:A2) over text cells).
+      return error ?? (sawNumber ? product : 0);
+    },
+  },
+  numeric2('CEILING', (n, significance) => {
+    if (significance === 0) {
+      return 0; // Excel quirk: CEILING(x,0) is 0, while FLOOR(x,0) is #DIV/0!
+    }
+    if (n > 0 && significance < 0) {
+      return new CellError(CellErrorType.NUM, 'CEILING significance must match the sign of the number');
+    }
+    const result = Math.ceil(cleanQuotient(n, significance)) * significance;
+    return result === 0 ? 0 : result;
+  }),
+  numeric2('FLOOR', (n, significance) => {
+    if (significance === 0) {
+      return n === 0 ? 0 : new CellError(CellErrorType.DIV_BY_ZERO, 'FLOOR significance cannot be 0');
+    }
+    if (n > 0 && significance < 0) {
+      return new CellError(CellErrorType.NUM, 'FLOOR significance must match the sign of the number');
+    }
+    const result = Math.floor(cleanQuotient(n, significance)) * significance;
+    return result === 0 ? 0 : result;
+  }),
+  {
+    metadata: { name: 'SUMPRODUCT', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const matrices = args.map(asMatrix);
+      const rows = matrices[0]!.length;
+      const cols = matrices[0]![0]?.length ?? 0;
+      for (const matrix of matrices) {
+        if (matrix.length !== rows || (matrix[0]?.length ?? 0) !== cols) {
+          return new CellError(CellErrorType.VALUE, 'SUMPRODUCT ranges must have the same shape');
+        }
+      }
+      let total = 0;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          let term = 1;
+          for (const matrix of matrices) {
+            const value = asScalar(matrix[row]![col]!);
+            if (value instanceof CellError) {
+              return value;
+            }
+            // Non-numeric entries (text, booleans, empties) count as 0.
+            term *= typeof value === 'number' ? value : 0;
+          }
+          total += term;
+        }
+      }
+      return total;
+    },
+  },
 ];

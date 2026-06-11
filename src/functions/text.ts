@@ -1,9 +1,52 @@
-/** Text functions: CONCAT, LEFT, RIGHT, MID, LEN, UPPER, LOWER, TRIM, TEXT, VALUE. */
+/** Text functions: CONCAT, slicing, casing, FIND/SEARCH, SUBSTITUTE/REPLACE, REPT, TEXTJOIN... */
 
 import { coerceToString, numberToText, parseNumericString } from '../value/coercion';
-import { CellError, CellErrorType, type RawInterpreterValue } from '../value/types';
-import { asNumber, asString, forEachScalar, roundScaled } from './helpers';
+import { CellError, CellErrorType, EmptyValue, type RawInterpreterValue } from '../value/types';
+import { asBoolean, asNumber, asString, forEachScalar, roundScaled, wildcardToRegExpSource } from './helpers';
 import type { RegisteredFunction } from './types';
+
+/** Excel's hard cap on the length of a text value. */
+const MAX_TEXT_LENGTH = 32767;
+
+/** FIND (case-sensitive, literal) and SEARCH (case-insensitive, wildcards). */
+function finder(name: 'FIND' | 'SEARCH'): RegisteredFunction {
+  return {
+    metadata: { name, minArgs: 2, maxArgs: 3 },
+    fn: (args: RawInterpreterValue[]) => {
+      const needle = asString(args[0]!);
+      if (needle instanceof CellError) {
+        return needle;
+      }
+      const haystack = asString(args[1]!);
+      if (haystack instanceof CellError) {
+        return haystack;
+      }
+      let start = 1;
+      if (args.length > 2) {
+        const startNum = asNumber(args[2]!);
+        if (startNum instanceof CellError) {
+          return startNum;
+        }
+        start = Math.trunc(startNum);
+      }
+      if (start < 1 || start > haystack.length + 1) {
+        return new CellError(CellErrorType.VALUE, `${name} start is out of range`);
+      }
+      let index: number;
+      if (name === 'FIND') {
+        index = haystack.indexOf(needle, start - 1);
+      } else {
+        const match = new RegExp(wildcardToRegExpSource(needle), 'is').exec(
+          haystack.slice(start - 1),
+        );
+        index = match ? start - 1 + match.index : -1;
+      }
+      return index === -1
+        ? new CellError(CellErrorType.VALUE, `${name} did not find "${needle}"`)
+        : index + 1;
+    },
+  };
+}
 
 /** One coerced text argument. */
 function text1(name: string, fn: (text: string) => string | number | CellError): RegisteredFunction {
@@ -149,6 +192,130 @@ export const textFunctions: RegisteredFunction[] = [
         return format;
       }
       return formatNumber(value, format);
+    },
+  },
+  finder('FIND'),
+  finder('SEARCH'),
+  {
+    metadata: { name: 'SUBSTITUTE', minArgs: 3, maxArgs: 4 },
+    fn: (args: RawInterpreterValue[]) => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      const oldText = asString(args[1]!);
+      if (oldText instanceof CellError) {
+        return oldText;
+      }
+      const newText = asString(args[2]!);
+      if (newText instanceof CellError) {
+        return newText;
+      }
+      let instance: number | undefined;
+      if (args.length > 3) {
+        const instanceNum = asNumber(args[3]!);
+        if (instanceNum instanceof CellError) {
+          return instanceNum;
+        }
+        instance = Math.trunc(instanceNum);
+        if (instance < 1) {
+          return new CellError(CellErrorType.VALUE, 'SUBSTITUTE instance must be >= 1');
+        }
+      }
+      if (oldText === '') {
+        return text;
+      }
+      if (instance === undefined) {
+        return text.split(oldText).join(newText);
+      }
+      // Replace only the nth occurrence (case-sensitive, left to right).
+      let index = -1;
+      for (let found = 0; found < instance; found++) {
+        index = text.indexOf(oldText, index + 1);
+        if (index === -1) {
+          return text;
+        }
+      }
+      return text.slice(0, index) + newText + text.slice(index + oldText.length);
+    },
+  },
+  {
+    metadata: { name: 'REPLACE', minArgs: 4, maxArgs: 4 },
+    fn: (args: RawInterpreterValue[]) => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      const startNum = asNumber(args[1]!);
+      if (startNum instanceof CellError) {
+        return startNum;
+      }
+      const countNum = asNumber(args[2]!);
+      if (countNum instanceof CellError) {
+        return countNum;
+      }
+      const newText = asString(args[3]!);
+      if (newText instanceof CellError) {
+        return newText;
+      }
+      const start = Math.trunc(startNum);
+      const count = Math.trunc(countNum);
+      if (start < 1 || count < 0) {
+        return new CellError(CellErrorType.VALUE, 'REPLACE start must be >= 1 and count >= 0');
+      }
+      return text.slice(0, start - 1) + newText + text.slice(start - 1 + count);
+    },
+  },
+  {
+    metadata: { name: 'REPT', minArgs: 2, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      const countNum = asNumber(args[1]!);
+      if (countNum instanceof CellError) {
+        return countNum;
+      }
+      const count = Math.trunc(countNum);
+      if (count < 0 || text.length * count > MAX_TEXT_LENGTH) {
+        return new CellError(CellErrorType.VALUE, 'REPT count is out of range');
+      }
+      return text.repeat(count);
+    },
+  },
+  {
+    metadata: { name: 'TEXTJOIN', minArgs: 3, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const delimiter = asString(args[0]!);
+      if (delimiter instanceof CellError) {
+        return delimiter;
+      }
+      const ignoreEmpty = asBoolean(args[1]!);
+      if (ignoreEmpty instanceof CellError) {
+        return ignoreEmpty;
+      }
+      const parts: string[] = [];
+      const error = forEachScalar(args.slice(2), (value) => {
+        if (value instanceof CellError) {
+          return value;
+        }
+        const text = value === EmptyValue ? '' : coerceToString(value);
+        if (text instanceof CellError) {
+          return text;
+        }
+        if (!(ignoreEmpty && text === '')) {
+          parts.push(text);
+        }
+        return undefined;
+      });
+      if (error) {
+        return error;
+      }
+      const joined = parts.join(delimiter);
+      return joined.length > MAX_TEXT_LENGTH
+        ? new CellError(CellErrorType.VALUE, 'TEXTJOIN result is too long')
+        : joined;
     },
   },
 ];

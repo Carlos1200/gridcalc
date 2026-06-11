@@ -1,4 +1,4 @@
-/** Statistical functions: AVERAGE, COUNT, COUNTA, MIN, MAX, SUMIF, COUNTIF. */
+/** Statistical functions: AVERAGE, COUNT, COUNTA, MIN, MAX and the *IF(S) family. */
 
 import { coerceToNumber } from '../value/coercion';
 import {
@@ -6,6 +6,7 @@ import {
   CellErrorType,
   EmptyValue,
   type RawInterpreterValue,
+  type RawScalarValue,
 } from '../value/types';
 import { asMatrix, asScalar, buildCriteriaPredicate, forEachNumber, forEachScalar } from './helpers';
 import type { RegisteredFunction } from './types';
@@ -47,6 +48,64 @@ function forEachMatch(
         }
       }
     }
+  }
+  return undefined;
+}
+
+/**
+ * COUNTIFS/SUMIFS/AVERAGEIFS: visits the positions where every
+ * (range, criteria) pair starting at args[firstPair] matches. All ranges must
+ * share the shape of `rows` x `cols` (#VALUE! otherwise, like Excel).
+ */
+function forEachMultiMatch(
+  args: RawInterpreterValue[],
+  firstPair: number,
+  rows: number,
+  cols: number,
+  visit: (row: number, col: number) => CellError | undefined,
+): CellError | undefined {
+  const predicates: {
+    range: RawInterpreterValue[][];
+    matches: (cell: RawScalarValue) => boolean;
+  }[] = [];
+  for (let i = firstPair; i + 1 < args.length; i += 2) {
+    const range = asMatrix(args[i]!);
+    if (range.length !== rows || (range[0]?.length ?? 0) !== cols) {
+      return new CellError(CellErrorType.VALUE, 'Criteria ranges must have the same shape');
+    }
+    const criteria = asScalar(args[i + 1]!);
+    if (criteria instanceof CellError) {
+      return criteria;
+    }
+    predicates.push({ range, matches: buildCriteriaPredicate(criteria) });
+  }
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (predicates.every((p) => p.matches(asScalar(p.range[row]![col]!)))) {
+        const error = visit(row, col);
+        if (error) {
+          return error;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Sums and counts the numeric matched cells; shared by SUMIFS-style outputs. */
+function sumMatchedCell(
+  valueRange: RawInterpreterValue[][],
+  row: number,
+  col: number,
+  acc: { total: number; count: number },
+): CellError | undefined {
+  const value = asScalar(valueRange[row]?.[col] ?? EmptyValue);
+  if (value instanceof CellError) {
+    return value;
+  }
+  if (typeof value === 'number') {
+    acc.total += value;
+    acc.count++;
   }
   return undefined;
 }
@@ -133,6 +192,63 @@ export const statisticalFunctions: RegisteredFunction[] = [
         return undefined;
       });
       return error ?? count;
+    },
+  },
+  {
+    metadata: { name: 'AVERAGEIF', minArgs: 2, maxArgs: 3, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const averageRange = args[2] !== undefined ? asMatrix(args[2]) : asMatrix(args[0]!);
+      const acc = { total: 0, count: 0 };
+      const error = forEachMatch(args, (row, col) => sumMatchedCell(averageRange, row, col, acc));
+      if (error) {
+        return error;
+      }
+      return acc.count === 0 ? new CellError(CellErrorType.DIV_BY_ZERO) : acc.total / acc.count;
+    },
+  },
+  {
+    metadata: { name: 'COUNTIFS', minArgs: 2, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const first = asMatrix(args[0]!);
+      let count = 0;
+      const error = forEachMultiMatch(args, 0, first.length, first[0]?.length ?? 0, () => {
+        count++;
+        return undefined;
+      });
+      return error ?? count;
+    },
+  },
+  {
+    metadata: { name: 'SUMIFS', minArgs: 3, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const sumRange = asMatrix(args[0]!);
+      const acc = { total: 0, count: 0 };
+      const error = forEachMultiMatch(
+        args,
+        1,
+        sumRange.length,
+        sumRange[0]?.length ?? 0,
+        (row, col) => sumMatchedCell(sumRange, row, col, acc),
+      );
+      return error ?? acc.total;
+    },
+  },
+  {
+    metadata: { name: 'AVERAGEIFS', minArgs: 3, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const averageRange = asMatrix(args[0]!);
+      const acc = { total: 0, count: 0 };
+      const error = forEachMultiMatch(
+        args,
+        1,
+        averageRange.length,
+        averageRange[0]?.length ?? 0,
+        (row, col) => sumMatchedCell(averageRange, row, col, acc),
+      );
+      if (error) {
+        return error;
+      }
+      return acc.count === 0 ? new CellError(CellErrorType.DIV_BY_ZERO) : acc.total / acc.count;
     },
   },
 ];

@@ -27,6 +27,23 @@ describe('localized function names', () => {
     expect(parseFormula('=SUM(1;2)', ES)).toMatchObject({ name: 'SUM' });
   });
 
+  it('parses non-ASCII localized names (AÑO has an Ñ)', () => {
+    expect(parseFormula('=AÑO(39448)', ES)).toMatchObject({ name: 'YEAR' });
+    expect(parseFormula('=MULTIPLO.SUPERIOR(2,5;1)', ES)).toMatchObject({ name: 'CEILING' });
+  });
+
+  it('evaluates the new phase 2 names end to end', () => {
+    const engine = Engine.buildEmpty({ locale: 'es', argumentSeparator: ';', decimalSeparator: ',' });
+    engine.batch(() => {
+      engine.setCellContents(addr('A1'), '=AÑO(FECHA(2008;7;15))');
+      engine.setCellContents(addr('A2'), '=SUSTITUIR("banana";"a";"o")');
+      engine.setCellContents(addr('A3'), '=ELEGIR(2;"a";"b")');
+    });
+    expect(engine.getCellValue(addr('A1'))).toBe(2008);
+    expect(engine.getCellValue(addr('A2'))).toBe('bonono');
+    expect(engine.getCellValue(addr('A3'))).toBe('b');
+  });
+
   it('serializes back to the localized spelling', () => {
     const ast = parseFormula('=SUMA(A1:A3)+SI.ERROR(1/0;0)', ES);
     expect(serializeAst(ast, ES)).toBe('SUMA(A1:A3)+SI.ERROR(1/0;0)');

@@ -50,5 +50,34 @@
   "=ISERROR(1/0)",
   "=ISERROR(42)",
   "=ISERROR(\"#N/A\")",
-  "=ISERROR(SQRT(-1))"
+  "=ISERROR(SQRT(-1))",
+  "=ISLOGICAL(TRUE)",
+  "=ISLOGICAL(1)",
+  "=ISLOGICAL(1=1)",
+  "=ISLOGICAL(\"TRUE\")",
+  "=ISNONTEXT(\"a\")",
+  "=ISNONTEXT(1)",
+  "=ISNONTEXT(1/0)",
+  {
+    "formula": "=ISNONTEXT(A1)",
+    "inputs": {}
+  },
+  "=ISNA(1/0)",
+  "=ISNA(MATCH(9,A1:A2,0))",
+  "=ISERR(1/0)",
+  "=ISERR(MATCH(9,A1:A2,0))",
+  "=ISERR(42)",
+  "=ISEVEN(2)",
+  "=ISEVEN(3)",
+  "=ISEVEN(2.5)",
+  "=ISEVEN(0)",
+  "=ISEVEN(-2)",
+  {
+    "formula": "=ISEVEN(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  "=ISEVEN(1/0)",
+  "=ISODD(-3)",
+  "=ISODD(2.5)",
+  "=ISODD(4)"
 ]
