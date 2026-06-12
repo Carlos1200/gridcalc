@@ -256,5 +256,93 @@
   "=ODD(3)",
   "=ODD(2)",
   "=ODD(-2)",
-  "=ODD(0)"
+  "=ODD(0)",
+  "=SIN(PI()/2)",
+  "=SIN(0)",
+  "=COS(0)",
+  "=COS(PI())",
+  "=TAN(PI()/4)",
+  "=SIN(\"abc\")",
+  "=ASIN(1)",
+  "=ASIN(0.5)",
+  {
+    "formula": "=ASIN(2)",
+    "expected": "#NUM!"
+  },
+  "=ACOS(0)",
+  {
+    "formula": "=ACOS(-2)",
+    "expected": "#NUM!"
+  },
+  "=ATAN(1)",
+  "=ATAN2(1,1)",
+  "=ATAN2(-1,-1)",
+  {
+    "formula": "=ATAN2(0,0)",
+    "expected": "#DIV/0!"
+  },
+  "=RADIANS(180)",
+  "=DEGREES(PI())",
+  "=SQRTPI(1)",
+  "=SQRTPI(2)",
+  {
+    "formula": "=SQRTPI(-1)",
+    "expected": "#NUM!"
+  },
+  "=FACT(5)",
+  "=FACT(0)",
+  "=FACT(5.9)",
+  {
+    "formula": "=FACT(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=FACT(171)",
+    "expected": "#NUM!"
+  },
+  "=COMBIN(8,2)",
+  "=COMBIN(10,5)",
+  "=COMBIN(4,0)",
+  {
+    "formula": "=COMBIN(4,5)",
+    "expected": "#NUM!"
+  },
+  "=GCD(24,36)",
+  {
+    "formula": "=GCD(A1:A3)",
+    "inputs": {
+      "A1": 12,
+      "A2": 18,
+      "A3": 30
+    }
+  },
+  "=GCD(5,0)",
+  {
+    "formula": "=GCD(-2,4)",
+    "expected": "#NUM!"
+  },
+  "=LCM(4,6)",
+  "=LCM(0,5)",
+  {
+    "formula": "=LCM(A1:A3)",
+    "inputs": {
+      "A1": 2,
+      "A2": 3,
+      "A3": 4
+    }
+  },
+  "=ROMAN(499)",
+  "=ROMAN(2026)",
+  "=ROMAN(0)",
+  {
+    "formula": "=ROMAN(4000)",
+    "expected": "#VALUE!"
+  },
+  "=ARABIC(\"MCMXII\")",
+  "=ARABIC(\"mmxxvi\")",
+  "=ARABIC(\"\")",
+  {
+    "formula": "=ARABIC(\"ABC\")",
+    "expected": "#VALUE!"
+  }
 ]

@@ -222,6 +222,58 @@ export const textFunctions: RegisteredFunction[] = [
     },
   },
   {
+    metadata: { name: 'UNICHAR', minArgs: 1, maxArgs: 1 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      const code = Math.trunc(n);
+      if (code < 1 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) {
+        return new CellError(CellErrorType.VALUE, 'UNICHAR code is not a valid code point');
+      }
+      return String.fromCodePoint(code);
+    },
+  },
+  text1('UNICODE', (text) =>
+    text === ''
+      ? new CellError(CellErrorType.VALUE, 'UNICODE needs a non-empty string')
+      : text.codePointAt(0)!,
+  ),
+  {
+    // FIXED(number, decimals=2, no_commas=FALSE) -> text.
+    metadata: { name: 'FIXED', minArgs: 1, maxArgs: 3 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      let decimals = 2;
+      if (args[1] !== undefined) {
+        const decimalsNum = asNumber(args[1]);
+        if (decimalsNum instanceof CellError) {
+          return decimalsNum;
+        }
+        decimals = Math.trunc(decimalsNum);
+      }
+      let noCommas = false;
+      if (args[2] !== undefined) {
+        const flag = asBoolean(args[2]);
+        if (flag instanceof CellError) {
+          return flag;
+        }
+        noCommas = flag;
+      }
+      const rounded = roundScaled(n, decimals, 'half-away');
+      let out = Math.abs(rounded).toFixed(Math.max(decimals, 0));
+      if (!noCommas) {
+        const [integer, fraction] = out.split('.');
+        out = integer!.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (fraction ? `.${fraction}` : '');
+      }
+      return (rounded < 0 ? '-' : '') + out;
+    },
+  },
+  {
     metadata: { name: 'EXACT', minArgs: 2, maxArgs: 2 },
     fn: (args: RawInterpreterValue[]) => {
       const a = asString(args[0]!);

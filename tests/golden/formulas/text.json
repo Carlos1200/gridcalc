@@ -192,5 +192,25 @@
   },
   "=CONCATENATE(\"a\",1/0)",
   "=CLEAN(\"abc\"&CHAR(10)&\"def\")",
-  "=CLEAN(CHAR(7)&\"x\")"
+  "=CLEAN(CHAR(7)&\"x\")",
+  "=UNICHAR(65)",
+  "=UNICHAR(960)",
+  {
+    "formula": "=UNICHAR(0)",
+    "expected": "#VALUE!"
+  },
+  "=UNICODE(\"A\")",
+  "=UNICODE(\"π\")",
+  {
+    "formula": "=UNICODE(\"\")",
+    "expected": "#VALUE!"
+  },
+  "=FIXED(1234.567)",
+  "=FIXED(1234.567,1)",
+  "=FIXED(1234.567,-2)",
+  {
+    "formula": "=FIXED(1234.567,1,TRUE)",
+    "expected": "1234.6"
+  },
+  "=FIXED(-1234.567,0)"
 ]

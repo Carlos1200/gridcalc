@@ -234,5 +234,42 @@
   {
     "formula": "=ERROR.TYPE(42)",
     "expected": "#N/A"
+  },
+  {
+    "formula": "=TYPE(1)",
+    "expected": 1
+  },
+  {
+    "formula": "=TYPE(\"a\")",
+    "expected": 2
+  },
+  {
+    "formula": "=TYPE(TRUE)",
+    "expected": 4
+  },
+  {
+    "formula": "=TYPE(1/0)",
+    "expected": 16
+  },
+  {
+    "formula": "=TYPE(A1)",
+    "inputs": {},
+    "expected": 1
+  },
+  {
+    "formula": "=ISREF(A1)",
+    "expected": true
+  },
+  {
+    "formula": "=ISREF(A1:B2)",
+    "expected": true
+  },
+  {
+    "formula": "=ISREF(1)",
+    "expected": false
+  },
+  {
+    "formula": "=ISREF(\"A1\")",
+    "expected": false
   }
 ]

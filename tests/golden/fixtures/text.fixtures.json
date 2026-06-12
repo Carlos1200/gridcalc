@@ -373,5 +373,49 @@
   {
     "formula": "=CLEAN(CHAR(7)&\"x\")",
     "expected": "x"
+  },
+  {
+    "formula": "=UNICHAR(65)",
+    "expected": "A"
+  },
+  {
+    "formula": "=UNICHAR(960)",
+    "expected": "π"
+  },
+  {
+    "formula": "=UNICHAR(0)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=UNICODE(\"A\")",
+    "expected": 65
+  },
+  {
+    "formula": "=UNICODE(\"π\")",
+    "expected": 960
+  },
+  {
+    "formula": "=UNICODE(\"\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FIXED(1234.567)",
+    "expected": "1,234.57"
+  },
+  {
+    "formula": "=FIXED(1234.567,1)",
+    "expected": "1,234.6"
+  },
+  {
+    "formula": "=FIXED(1234.567,-2)",
+    "expected": "1,200"
+  },
+  {
+    "formula": "=FIXED(1234.567,1,TRUE)",
+    "expected": "1234.6"
+  },
+  {
+    "formula": "=FIXED(-1234.567,0)",
+    "expected": "-1,235"
   }
 ]

@@ -103,7 +103,14 @@
   - text: PROPER, EXACT, CHAR/CODE (1-255, Excel; LO acepta >255 → `expected` manual), CONCATENATE (legacy, solo escalares), CLEAN
   - lookup: ROW/COLUMN (lazy, inspeccionan la referencia sin evaluarla; sin argumento responden por la celda de la fórmula — unit test, no golden: el harness evalúa en ZZ10000), ROWS/COLUMNS
   - Divergencia extra: `ERROR.TYPE(SQRT(-1))` en LO da `#N/A` (su SQRT(-1) es Err:502); fijado a 6 (`#NUM!` Excel)
-- [ ] Seguir subiendo hacia ~150 ← SIGUIENTE PASO (GCD/LCM/SQRTPI/COMBIN/FACT/RADIANS/DEGREES/SIN/COS/TAN..., WEEKNUM/WORKDAY/NETWORKDAYS/DAYS/DAYS360/YEARFRAC, OFFSET/INDIRECT (volátiles, tocan grafo de dependencias — quizá Fase 3), ISREF, TYPE, CELL/INFO (subset), DOLLAR/FIXED, UNICHAR/UNICODE, MAXIFS/MINIFS, PERCENTILE/QUARTILE, ROMAN/ARABIC...)
+- [x] Tercera tanda de expansión: **137 funciones totales** (2026-06-11), todas con golden y nombre es
+  - math: SIN/COS/TAN/ASIN/ACOS/ATAN/ATAN2 (orden de args Excel: `ATAN2(x,y)`; `(0,0)`→`#DIV/0!`), RADIANS/DEGREES, SQRTPI, FACT (>170→`#NUM!`), COMBIN (forma multiplicativa), GCD/LCM (variádicas, negativos→`#NUM!`), ROMAN (solo forma clásica 0)/ARABIC
+  - statistical: MAXIFS/MINIFS (sin match → 0; vía `COM.MICROSOFT.*` en el generador), PERCENTILE (interpolación lineal estilo .INC)/QUARTILE
+  - datetime: DAYS, DAYS360 (métodos US/NASD y europeo), WEEKNUM (tipos 1/2/11-17 y 21 ISO), WORKDAY/NETWORKDAYS (festivos opcionales; intervalo invertido → negativo; golden vía comparación `=DATE(...)` porque LO exporta el resultado formateado como fecha)
+  - text: UNICHAR/UNICODE (rechaza surrogates), FIXED (redondeo half-away, separador de miles; resultado sin comas fijado como string — el CSV lo convierte a número)
+  - information: TYPE (1/2/4/16/64; `TYPE(TRUE)` fijado a 4 — LO da 1 porque trata booleanos como números), ISREF (lazy, inspecciona el AST)
+  - YEARFRAC pospuesta (bases 30/360 y actual/actual con reglas Excel propias); OFFSET/INDIRECT siguen para Fase 3 (volátiles, grafo)
+- [ ] Seguir subiendo hacia ~150 ← SIGUIENTE PASO (YEARFRAC, SINH/COSH/TANH/ASINH/ACOSH/ATANH, MROUND, SUMSQ, POWER ya está; AVEDEV/DEVSQ/GEOMEAN/HARMEAN/STDEVP/VARP/PERMUT, DOLLAR, LEFT/RIGHT con LEN ya; ADDRESS, FORMULATEXT, ISFORMULA, SHEET/SHEETS, BASE/DECIMAL2 (BASE/DECIMAL de Excel), BITAND/BITOR/BITXOR/BITLSHIFT/BITRSHIFT, DELTA/GESTEP...)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

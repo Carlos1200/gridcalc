@@ -6,6 +6,7 @@
  * propagate errors, like Excel (=ISEVEN("abc") is #VALUE!).
  */
 
+import type { Ast } from '../ast/nodes';
 import { CellError, CellErrorType, EmptyValue, type RawInterpreterValue } from '../value/types';
 import { asNumber } from './helpers';
 import type { RegisteredFunction } from './types';
@@ -82,6 +83,34 @@ export const informationFunctions: RegisteredFunction[] = [
         return value;
       }
       return typeof value === 'string' ? value : '';
+    },
+  },
+  {
+    // Lazy: ISREF asks whether the argument IS a reference, not what it holds.
+    metadata: { name: 'ISREF', minArgs: 1, maxArgs: 1, argHandling: 'lazy' },
+    fn: (args: Ast[]) => {
+      const target = args[0]!;
+      return target.type === 'CELL_REFERENCE' || target.type === 'RANGE_REFERENCE';
+    },
+  },
+  {
+    // TYPE codes: 1 number (and blank), 2 text, 4 logical, 16 error, 64 array.
+    metadata: { name: 'TYPE', minArgs: 1, maxArgs: 1, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const value = args[0]!;
+      if (Array.isArray(value)) {
+        return 64;
+      }
+      if (typeof value === 'string') {
+        return 2;
+      }
+      if (typeof value === 'boolean') {
+        return 4;
+      }
+      if (value instanceof CellError) {
+        return 16;
+      }
+      return 1; // numbers and empty cells
     },
   },
   {

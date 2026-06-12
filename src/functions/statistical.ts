@@ -1,4 +1,4 @@
-/** Statistical functions: AVERAGE, COUNT/COUNTA/COUNTBLANK, MIN/MAX, MEDIAN/MODE/STDEV/VAR, LARGE/SMALL/RANK and the *IF(S) family. */
+/** Statistical functions: AVERAGE, COUNT*, MIN/MAX, MEDIAN/MODE/STDEV/VAR, LARGE/SMALL/RANK, PERCENTILE/QUARTILE and the *IF(S) family. */
 
 import { coerceToNumber } from '../value/coercion';
 import {
@@ -53,6 +53,53 @@ function kth(name: 'LARGE' | 'SMALL'): RegisteredFunction {
       }
       numbers.sort(name === 'LARGE' ? (a, b) => b - a : (a, b) => a - b);
       return numbers[k - 1]!;
+    },
+  };
+}
+
+/** PERCENTILE.INC semantics: linear interpolation over the sorted numbers. */
+function percentileOf(numbers: number[], k: number): number | CellError {
+  if (numbers.length === 0) {
+    return new CellError(CellErrorType.NUM, 'No numbers to take a percentile of');
+  }
+  if (k < 0 || k > 1) {
+    return new CellError(CellErrorType.NUM, 'Percentile must be between 0 and 1');
+  }
+  numbers.sort((a, b) => a - b);
+  const position = k * (numbers.length - 1);
+  const lower = Math.floor(position);
+  const fraction = position - lower;
+  if (fraction === 0) {
+    return numbers[lower]!;
+  }
+  return numbers[lower]! + fraction * (numbers[lower + 1]! - numbers[lower]!);
+}
+
+/** MAXIFS/MINIFS: best numeric value among multi-criteria matches; none -> 0. */
+function bestIfs(name: 'MAXIFS' | 'MINIFS'): RegisteredFunction {
+  const better = name === 'MAXIFS' ? (a: number, b: number) => a > b : (a: number, b: number) => a < b;
+  return {
+    metadata: { name, minArgs: 3, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const targetRange = asMatrix(args[0]!);
+      let best: number | undefined;
+      const error = forEachMultiMatch(
+        args,
+        1,
+        targetRange.length,
+        targetRange[0]?.length ?? 0,
+        (row, col) => {
+          const value = asScalar(targetRange[row]?.[col] ?? EmptyValue);
+          if (value instanceof CellError) {
+            return value;
+          }
+          if (typeof value === 'number' && (best === undefined || better(value, best))) {
+            best = value;
+          }
+          return undefined;
+        },
+      );
+      return error ?? best ?? 0;
     },
   };
 }
@@ -353,6 +400,37 @@ export const statisticalFunctions: RegisteredFunction[] = [
       }
       const beaten = numbers.filter((n) => (ascending ? n < value : n > value)).length;
       return beaten + 1;
+    },
+  },
+  bestIfs('MAXIFS'),
+  bestIfs('MINIFS'),
+  {
+    metadata: { name: 'PERCENTILE', minArgs: 2, maxArgs: 2, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const numbers = collectNumbers([args[0]!]);
+      if (numbers instanceof CellError) {
+        return numbers;
+      }
+      const k = asNumber(args[1]!);
+      return k instanceof CellError ? k : percentileOf(numbers, k);
+    },
+  },
+  {
+    metadata: { name: 'QUARTILE', minArgs: 2, maxArgs: 2, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const numbers = collectNumbers([args[0]!]);
+      if (numbers instanceof CellError) {
+        return numbers;
+      }
+      const quartNum = asNumber(args[1]!);
+      if (quartNum instanceof CellError) {
+        return quartNum;
+      }
+      const quart = Math.trunc(quartNum);
+      if (quart < 0 || quart > 4) {
+        return new CellError(CellErrorType.NUM, 'QUARTILE needs a quart between 0 and 4');
+      }
+      return percentileOf(numbers, quart / 4);
     },
   },
   {

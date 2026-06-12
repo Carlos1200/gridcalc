@@ -490,5 +490,191 @@
   {
     "formula": "=ODD(0)",
     "expected": 1
+  },
+  {
+    "formula": "=SIN(PI()/2)",
+    "expected": 1
+  },
+  {
+    "formula": "=SIN(0)",
+    "expected": 0
+  },
+  {
+    "formula": "=COS(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=COS(PI())",
+    "expected": -1
+  },
+  {
+    "formula": "=TAN(PI()/4)",
+    "expected": 1
+  },
+  {
+    "formula": "=SIN(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=ASIN(1)",
+    "expected": 1.5707963267949
+  },
+  {
+    "formula": "=ASIN(0.5)",
+    "expected": 0.523598775598299
+  },
+  {
+    "formula": "=ASIN(2)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=ACOS(0)",
+    "expected": 1.5707963267949
+  },
+  {
+    "formula": "=ACOS(-2)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=ATAN(1)",
+    "expected": 0.785398163397448
+  },
+  {
+    "formula": "=ATAN2(1,1)",
+    "expected": 0.785398163397448
+  },
+  {
+    "formula": "=ATAN2(-1,-1)",
+    "expected": -2.35619449019235
+  },
+  {
+    "formula": "=ATAN2(0,0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=RADIANS(180)",
+    "expected": 3.14159265358979
+  },
+  {
+    "formula": "=DEGREES(PI())",
+    "expected": 180
+  },
+  {
+    "formula": "=SQRTPI(1)",
+    "expected": 1.77245385090552
+  },
+  {
+    "formula": "=SQRTPI(2)",
+    "expected": 2.506628274631
+  },
+  {
+    "formula": "=SQRTPI(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=FACT(5)",
+    "expected": 120
+  },
+  {
+    "formula": "=FACT(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=FACT(5.9)",
+    "expected": 120
+  },
+  {
+    "formula": "=FACT(-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=FACT(171)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=COMBIN(8,2)",
+    "expected": 28
+  },
+  {
+    "formula": "=COMBIN(10,5)",
+    "expected": 252
+  },
+  {
+    "formula": "=COMBIN(4,0)",
+    "expected": 1
+  },
+  {
+    "formula": "=COMBIN(4,5)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=GCD(24,36)",
+    "expected": 12
+  },
+  {
+    "formula": "=GCD(A1:A3)",
+    "inputs": {
+      "A1": 12,
+      "A2": 18,
+      "A3": 30
+    },
+    "expected": 6
+  },
+  {
+    "formula": "=GCD(5,0)",
+    "expected": 5
+  },
+  {
+    "formula": "=GCD(-2,4)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=LCM(4,6)",
+    "expected": 12
+  },
+  {
+    "formula": "=LCM(0,5)",
+    "expected": 0
+  },
+  {
+    "formula": "=LCM(A1:A3)",
+    "inputs": {
+      "A1": 2,
+      "A2": 3,
+      "A3": 4
+    },
+    "expected": 12
+  },
+  {
+    "formula": "=ROMAN(499)",
+    "expected": "CDXCIX"
+  },
+  {
+    "formula": "=ROMAN(2026)",
+    "expected": "MMXXVI"
+  },
+  {
+    "formula": "=ROMAN(0)",
+    "expected": ""
+  },
+  {
+    "formula": "=ROMAN(4000)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=ARABIC(\"MCMXII\")",
+    "expected": 1912
+  },
+  {
+    "formula": "=ARABIC(\"mmxxvi\")",
+    "expected": 2026
+  },
+  {
+    "formula": "=ARABIC(\"\")",
+    "expected": 0
+  },
+  {
+    "formula": "=ARABIC(\"ABC\")",
+    "expected": "#VALUE!"
   }
 ]

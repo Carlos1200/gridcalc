@@ -1,9 +1,9 @@
-/** Date & time functions: TODAY/NOW, DATE/TIME, date and time fields, WEEKDAY, EDATE/EOMONTH, DATEDIF. */
+/** Date & time functions: TODAY/NOW, DATE/TIME, fields, WEEKDAY/WEEKNUM, EDATE/EOMONTH, DATEDIF, working days. */
 
 import { dateToSerial, fractionToTime, serialToDate, timeToFraction, type SimpleDate, type SimpleTime } from '../value/dates';
-import { CellError, CellErrorType, type RawInterpreterValue } from '../value/types';
+import { CellError, CellErrorType, EmptyValue, type RawInterpreterValue } from '../value/types';
 import type { EvaluationContext } from '../evaluator/context';
-import { asNumber, asString } from './helpers';
+import { asMatrix, asNumber, asScalar, asString } from './helpers';
 import type { RegisteredFunction } from './types';
 
 function todaySerial(context: EvaluationContext): number {
@@ -76,6 +76,35 @@ function dateField(name: string, pick: (date: SimpleDate) => number): Registered
       return date instanceof CellError ? date : pick(date);
     },
   };
+}
+
+/** Monday-0 day-of-week index of a serial (serial 1 = Sunday = 6). */
+function mondayIndex(serial: number): number {
+  return (serial + 5) % 7;
+}
+
+const isWeekend = (serial: number): boolean => mondayIndex(serial) >= 5;
+
+/** The optional holidays range of WORKDAY/NETWORKDAYS as a set of serials. */
+function collectHolidays(arg: RawInterpreterValue | undefined): Set<number> | CellError {
+  const holidays = new Set<number>();
+  if (arg === undefined) {
+    return holidays;
+  }
+  for (const row of asMatrix(arg)) {
+    for (const cell of row) {
+      const value = asScalar(cell);
+      if (value instanceof CellError) {
+        return value;
+      }
+      if (typeof value === 'number') {
+        holidays.add(Math.trunc(value));
+      } else if (value !== EmptyValue) {
+        return new CellError(CellErrorType.VALUE, 'Holidays must be dates');
+      }
+    }
+  }
+  return holidays;
 }
 
 /** One time-of-day field (hour/minute/second) of a serial number's fraction. */
@@ -215,6 +244,167 @@ export const datetimeFunctions: RegisteredFunction[] = [
   },
   monthShifter('EDATE'),
   monthShifter('EOMONTH'),
+  {
+    metadata: { name: 'DAYS', minArgs: 2, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const end = asNumber(args[0]!);
+      if (end instanceof CellError) {
+        return end;
+      }
+      const start = asNumber(args[1]!);
+      return start instanceof CellError ? start : Math.trunc(end) - Math.trunc(start);
+    },
+  },
+  {
+    metadata: { name: 'DAYS360', minArgs: 2, maxArgs: 3 },
+    fn: (args: RawInterpreterValue[], context: EvaluationContext) => {
+      const startNum = asNumber(args[0]!);
+      if (startNum instanceof CellError) {
+        return startNum;
+      }
+      const endNum = asNumber(args[1]!);
+      if (endNum instanceof CellError) {
+        return endNum;
+      }
+      let european = false;
+      if (args[2] !== undefined) {
+        const flag = asNumber(args[2]);
+        if (flag instanceof CellError) {
+          return flag;
+        }
+        european = flag !== 0;
+      }
+      const bug = context.config.use1900LeapYearBug;
+      const start = serialToDate(Math.floor(startNum), bug);
+      const end = serialToDate(Math.floor(endNum), bug);
+      let startDay = start.day;
+      let endDay = end.day;
+      let endMonthShift = 0;
+      if (european) {
+        startDay = Math.min(startDay, 30);
+        endDay = Math.min(endDay, 30);
+      } else {
+        // US/NASD method.
+        if (startDay === daysInMonth(start.year, start.month)) {
+          startDay = 30;
+        }
+        if (endDay === 31) {
+          if (startDay < 30) {
+            endDay = 1;
+            endMonthShift = 1;
+          } else {
+            endDay = 30;
+          }
+        }
+      }
+      return (
+        (end.year - start.year) * 360 +
+        (end.month + endMonthShift - start.month) * 30 +
+        (endDay - startDay)
+      );
+    },
+  },
+  {
+    metadata: { name: 'WEEKNUM', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[], context: EvaluationContext) => {
+      const serialNum = asNumber(args[0]!);
+      if (serialNum instanceof CellError) {
+        return serialNum;
+      }
+      const serial = Math.floor(serialNum);
+      if (serial < 0) {
+        return new CellError(CellErrorType.NUM, 'WEEKNUM serial cannot be negative');
+      }
+      let type = 1;
+      if (args.length > 1) {
+        const typeNum = asNumber(args[1]!);
+        if (typeNum instanceof CellError) {
+          return typeNum;
+        }
+        type = Math.trunc(typeNum);
+      }
+      const bug = context.config.use1900LeapYearBug;
+      if (type === 21) {
+        // ISO 8601: the week containing the first Thursday is week 1.
+        const thursday = serial - mondayIndex(serial) + 3;
+        const yearStart = dateToSerial({ year: serialToDate(thursday, bug).year, month: 1, day: 1 }, bug);
+        return Math.floor((thursday - yearStart) / 7) + 1;
+      }
+      // System 1: the week containing January 1 is week 1.
+      let weekStartMonday: number; // 0 = Monday ... 6 = Sunday
+      if (type === 1) {
+        weekStartMonday = 6;
+      } else if (type === 2) {
+        weekStartMonday = 0;
+      } else if (type >= 11 && type <= 17) {
+        weekStartMonday = type - 11;
+      } else {
+        return new CellError(CellErrorType.NUM, `Unknown WEEKNUM type ${type}`);
+      }
+      const january1 = dateToSerial({ year: serialToDate(serial, bug).year, month: 1, day: 1 }, bug);
+      const daysBeforeJanuary1 = (mondayIndex(january1) - weekStartMonday + 7) % 7;
+      return Math.floor((serial - january1 + daysBeforeJanuary1) / 7) + 1;
+    },
+  },
+  {
+    metadata: { name: 'WORKDAY', minArgs: 2, maxArgs: 3, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const startNum = asNumber(args[0]!);
+      if (startNum instanceof CellError) {
+        return startNum;
+      }
+      const daysNum = asNumber(args[1]!);
+      if (daysNum instanceof CellError) {
+        return daysNum;
+      }
+      const holidays = collectHolidays(args[2]);
+      if (holidays instanceof CellError) {
+        return holidays;
+      }
+      let current = Math.trunc(startNum);
+      let remaining = Math.trunc(daysNum);
+      const step = remaining >= 0 ? 1 : -1;
+      while (remaining !== 0) {
+        current += step;
+        if (current < 0) {
+          return new CellError(CellErrorType.NUM, 'WORKDAY went before 1900-01-01');
+        }
+        if (!isWeekend(current) && !holidays.has(current)) {
+          remaining -= step;
+        }
+      }
+      return current;
+    },
+  },
+  {
+    metadata: { name: 'NETWORKDAYS', minArgs: 2, maxArgs: 3, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const startNum = asNumber(args[0]!);
+      if (startNum instanceof CellError) {
+        return startNum;
+      }
+      const endNum = asNumber(args[1]!);
+      if (endNum instanceof CellError) {
+        return endNum;
+      }
+      const holidays = collectHolidays(args[2]);
+      if (holidays instanceof CellError) {
+        return holidays;
+      }
+      const start = Math.trunc(startNum);
+      const end = Math.trunc(endNum);
+      // Both endpoints count; a reversed interval counts negative, like Excel.
+      const sign = start <= end ? 1 : -1;
+      const [from, to] = start <= end ? [start, end] : [end, start];
+      let count = 0;
+      for (let serial = from; serial <= to; serial++) {
+        if (!isWeekend(serial) && !holidays.has(serial)) {
+          count++;
+        }
+      }
+      return sign * count;
+    },
+  },
   {
     metadata: { name: 'DATEDIF', minArgs: 3, maxArgs: 3 },
     fn: (args: RawInterpreterValue[], context: EvaluationContext) => {

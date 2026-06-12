@@ -97,5 +97,20 @@
   {
     "formula": "=ERROR.TYPE(42)",
     "expected": "#N/A"
-  }
+  },
+  "=TYPE(1)",
+  "=TYPE(\"a\")",
+  {
+    "formula": "=TYPE(TRUE)",
+    "expected": 4
+  },
+  "=TYPE(1/0)",
+  {
+    "formula": "=TYPE(A1)",
+    "inputs": {}
+  },
+  "=ISREF(A1)",
+  "=ISREF(A1:B2)",
+  "=ISREF(1)",
+  "=ISREF(\"A1\")"
 ]

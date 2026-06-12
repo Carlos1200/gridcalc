@@ -234,5 +234,99 @@
   {
     "formula": "=WEEKDAY(DATE(2008,1,1),4)",
     "expected": "#NUM!"
+  },
+  {
+    "formula": "=DAYS(DATE(2026,6,11),DATE(2026,1,1))",
+    "expected": 161
+  },
+  {
+    "formula": "=DAYS(5,10)",
+    "expected": -5
+  },
+  {
+    "formula": "=DAYS(\"abc\",1)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=DAYS360(DATE(2026,1,30),DATE(2026,2,28))",
+    "expected": 28
+  },
+  {
+    "formula": "=DAYS360(DATE(2026,1,31),DATE(2026,3,31))",
+    "expected": 60
+  },
+  {
+    "formula": "=DAYS360(DATE(2026,1,15),DATE(2026,3,31))",
+    "expected": 76
+  },
+  {
+    "formula": "=DAYS360(DATE(2026,1,31),DATE(2026,3,31),TRUE)",
+    "expected": 60
+  },
+  {
+    "formula": "=DAYS360(DATE(2026,2,28),DATE(2026,3,31))",
+    "expected": 30
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,1,1))",
+    "expected": 1
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,1,4))",
+    "expected": 2
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,6,11))",
+    "expected": 24
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,6,11),2)",
+    "expected": 24
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,1,4),21)",
+    "expected": 1
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,6,11),21)",
+    "expected": 24
+  },
+  {
+    "formula": "=WEEKNUM(DATE(2026,6,11),5)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=WORKDAY(DATE(2026,6,11),3)=DATE(2026,6,16)",
+    "expected": true
+  },
+  {
+    "formula": "=WORKDAY(DATE(2026,6,11),-3)=DATE(2026,6,8)",
+    "expected": true
+  },
+  {
+    "formula": "=WORKDAY(DATE(2026,6,11),0)=DATE(2026,6,11)",
+    "expected": true
+  },
+  {
+    "formula": "=WORKDAY(DATE(2026,6,11),3,A1:A2)=DATE(2026,6,17)",
+    "inputs": {
+      "A1": 46188
+    },
+    "expected": true
+  },
+  {
+    "formula": "=NETWORKDAYS(DATE(2026,6,8),DATE(2026,6,14))",
+    "expected": 5
+  },
+  {
+    "formula": "=NETWORKDAYS(DATE(2026,6,14),DATE(2026,6,8))",
+    "expected": -5
+  },
+  {
+    "formula": "=NETWORKDAYS(DATE(2026,6,8),DATE(2026,6,19),A1:A1)",
+    "inputs": {
+      "A1": 46188
+    },
+    "expected": 9
   }
 ]
