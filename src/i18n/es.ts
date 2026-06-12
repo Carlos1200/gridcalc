@@ -164,6 +164,9 @@ export const ES_FUNCTION_NAMES: Readonly<Record<string, string>> = {
   UNICHAR: 'UNICAR',
   UNICODE: 'UNICODE',
   FIXED: 'DECIMAL',
+  DOLLAR: 'MONEDA',
+  TEXTBEFORE: 'TEXTOANTES',
+  TEXTAFTER: 'TEXTODESPUES',
   // lookup
   VLOOKUP: 'BUSCARV',
   HLOOKUP: 'BUSCARH',

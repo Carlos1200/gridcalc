@@ -212,5 +212,41 @@
     "formula": "=FIXED(1234.567,1,TRUE)",
     "expected": "1234.6"
   },
-  "=FIXED(-1234.567,0)"
+  "=FIXED(-1234.567,0)",
+  "=DOLLAR(1234.567)",
+  "=DOLLAR(1234.567,-2)",
+  {
+    "formula": "=DOLLAR(-1234.567,-2)",
+    "expected": "($1,200)"
+  },
+  {
+    "formula": "=DOLLAR(-0.123,4)",
+    "expected": "($0.1230)"
+  },
+  "=DOLLAR(99.888)",
+  "=DOLLAR(\"abc\")",
+  "=TEXTBEFORE(\"red-blue-green\",\"-\")",
+  "=TEXTBEFORE(\"red-blue-green\",\"-\",2)",
+  "=TEXTBEFORE(\"red-blue-green\",\"-\",-1)",
+  "=TEXTBEFORE(\"Red riding hood\",\"RED\",1,1)",
+  "=TEXTBEFORE(\"red-blue-green\",\"+\")",
+  "=TEXTBEFORE(\"red-blue-green\",\"+\",1,0,0,\"missing\")",
+  "=TEXTBEFORE(\"red-blue-green\",\"-\",3)",
+  "=TEXTBEFORE(\"red-blue-green\",\"-\",3,0,1)",
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\",0)",
+    "expected": "#VALUE!"
+  },
+  "=TEXTAFTER(\"red-blue-green\",\"-\")",
+  "=TEXTAFTER(\"red-blue-green\",\"-\",2)",
+  "=TEXTAFTER(\"red-blue-green\",\"-\",-1)",
+  "=TEXTAFTER(\"red-blue-green\",\"-\",-2)",
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"+\",1,0,1)",
+    "expected": ""
+  },
+  "=TEXTAFTER(\"red-blue-green\",\"-\",-3,0,1)",
+  "=TEXTAFTER(\"RED-blue\",\"red\",1,1)",
+  "=TEXTAFTER(\"red-blue-green\",\"+\")",
+  "=TEXTAFTER(1/0,\"-\")"
 ]

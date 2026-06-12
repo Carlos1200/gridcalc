@@ -2,7 +2,7 @@
 
 import { coerceToString, numberToText, parseNumericString } from '../value/coercion';
 import { CellError, CellErrorType, EmptyValue, type RawInterpreterValue } from '../value/types';
-import { asBoolean, asNumber, asString, forEachScalar, roundScaled, wildcardToRegExpSource } from './helpers';
+import { asBoolean, asNumber, asScalar, asString, forEachScalar, roundScaled, wildcardToRegExpSource } from './helpers';
 import type { RegisteredFunction } from './types';
 
 /** Excel's hard cap on the length of a text value. */
@@ -83,6 +83,80 @@ function leftRight(name: 'LEFT' | 'RIGHT'): RegisteredFunction {
         return '';
       }
       return name === 'LEFT' ? text.slice(0, count) : text.slice(-count);
+    },
+  };
+}
+
+/**
+ * TEXTBEFORE/TEXTAFTER share everything but which side of the delimiter they
+ * keep. Signature: (text, delimiter, instance=1, match_mode=0, match_end=0,
+ * if_not_found). Negative instances count from the end; match_end treats the
+ * end of the text (start, for negative instances) as one extra delimiter.
+ */
+function textBeforeAfter(name: 'TEXTBEFORE' | 'TEXTAFTER'): RegisteredFunction {
+  return {
+    metadata: { name, minArgs: 2, maxArgs: 6 },
+    fn: (args: RawInterpreterValue[]) => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      const delimiter = asString(args[1]!);
+      if (delimiter instanceof CellError) {
+        return delimiter;
+      }
+      let instance = 1;
+      if (args[2] !== undefined) {
+        const n = asNumber(args[2]);
+        if (n instanceof CellError) {
+          return n;
+        }
+        instance = Math.trunc(n);
+      }
+      if (instance === 0) {
+        return new CellError(CellErrorType.VALUE, `${name} instance cannot be 0`);
+      }
+      let caseInsensitive = false;
+      if (args[3] !== undefined) {
+        const mode = asNumber(args[3]);
+        if (mode instanceof CellError) {
+          return mode;
+        }
+        caseInsensitive = mode === 1;
+      }
+      let matchEnd = false;
+      if (args[4] !== undefined) {
+        const flag = asNumber(args[4]);
+        if (flag instanceof CellError) {
+          return flag;
+        }
+        matchEnd = flag === 1;
+      }
+      const haystack = caseInsensitive ? text.toLowerCase() : text;
+      const needle = caseInsensitive ? delimiter.toLowerCase() : delimiter;
+      const occurrences: number[] = [];
+      for (
+        let at = haystack.indexOf(needle);
+        at !== -1;
+        at = haystack.indexOf(needle, at + Math.max(needle.length, 1))
+      ) {
+        occurrences.push(at);
+      }
+      let position: number;
+      let length = delimiter.length;
+      const nth = Math.abs(instance);
+      if (nth <= occurrences.length) {
+        position = instance > 0 ? occurrences[nth - 1]! : occurrences[occurrences.length - nth]!;
+      } else if (matchEnd && nth === occurrences.length + 1) {
+        // The virtual delimiter sits at the far end of the scan direction.
+        position = instance > 0 ? text.length : 0;
+        length = 0;
+      } else {
+        return args[5] !== undefined
+          ? asScalar(args[5]) // if_not_found passes through as-is
+          : new CellError(CellErrorType.NA, `${name} did not find the delimiter`);
+      }
+      return name === 'TEXTBEFORE' ? text.slice(0, position) : text.slice(position + length);
     },
   };
 }
@@ -421,4 +495,29 @@ export const textFunctions: RegisteredFunction[] = [
         : joined;
     },
   },
+  {
+    // DOLLAR(number, decimals=2) -> "$1,234.57"; negatives in parentheses.
+    metadata: { name: 'DOLLAR', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      let decimals = 2;
+      if (args[1] !== undefined) {
+        const decimalsNum = asNumber(args[1]);
+        if (decimalsNum instanceof CellError) {
+          return decimalsNum;
+        }
+        decimals = Math.trunc(decimalsNum);
+      }
+      const rounded = roundScaled(n, decimals, 'half-away');
+      const [integer, fraction] = Math.abs(rounded).toFixed(Math.max(decimals, 0)).split('.');
+      const grouped =
+        integer!.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (fraction ? `.${fraction}` : '');
+      return rounded < 0 ? `($${grouped})` : `$${grouped}`;
+    },
+  },
+  textBeforeAfter('TEXTBEFORE'),
+  textBeforeAfter('TEXTAFTER'),
 ];

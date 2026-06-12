@@ -120,7 +120,8 @@
   - statistical (regresión): COVAR, CORREL, SLOPE, INTERCEPT, FORECAST — pares no numéricos se saltan posicionalmente, tamaños distintos → `#N/A` (LO da Err:502, `expected` manual), sin datos o varianza cero → `#DIV/0!` (CORREL con rangos vacíos: LO da `#VALUE!`, fijado a `#DIV/0!` Excel)
   - distributions (`src/functions/distributions.ts`): NORM.DIST/NORMDIST, NORM.INV/NORMINV, NORM.S.DIST/NORMSDIST (la legacy es solo CDF), NORM.S.INV/NORMSINV — erf/erfc de Cody (SPECFUN) + inversa de Acklam con un paso de Halley; coincide con LO dentro de 1e-9 incluso en colas (`NORMSDIST(-8)`); sd ≤ 0 o p fuera de (0,1) → `#NUM!`
   - Generador: grafías modernas vía `COM.MICROSOFT.NORM.*`; las legacy NORMSDIST/NORMSINV en ODF son `LEGACY.NORMS*`
-- [ ] Resto de la expansión opcional: DOLLAR, TEXTBEFORE/TEXTAFTER (TEXTSPLIT devuelve arrays → Fase 3), ISFORMULA/FORMULATEXT/SHEET/SHEETS (con extensión del contexto), OFFSET/INDIRECT (Fase 3)
+- [x] Sexta tanda (2026-06-12): **179 funciones totales** — text: DOLLAR (negativos entre paréntesis `($1,200)`; LO emite `-$1,200`, `expected` manual), TEXTBEFORE/TEXTAFTER (firma completa de 6 args: instancia negativa desde el final, match_mode case-insensitive, match_end como delimitador virtual — al final con instancia positiva, al inicio con negativa —, if_not_found; LO los soporta vía `COM.MICROSOFT.*` pero diverge en `instance=0` (LO `#N/A`, Excel `#VALUE!`) y en TEXTAFTER+match_end sin match (LO devuelve todo el texto, Excel `""` según el ejemplo "Socrates" de la doc MS)). TEXTSPLIT devuelve arrays → Fase 3
+- [ ] Resto de la expansión opcional: ISFORMULA/FORMULATEXT/SHEET/SHEETS (con extensión del contexto), OFFSET/INDIRECT (Fase 3)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

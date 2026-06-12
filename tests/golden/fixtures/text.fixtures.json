@@ -417,5 +417,101 @@
   {
     "formula": "=FIXED(-1234.567,0)",
     "expected": "-1,235"
+  },
+  {
+    "formula": "=DOLLAR(1234.567)",
+    "expected": "$1,234.57"
+  },
+  {
+    "formula": "=DOLLAR(1234.567,-2)",
+    "expected": "$1,200"
+  },
+  {
+    "formula": "=DOLLAR(-1234.567,-2)",
+    "expected": "($1,200)"
+  },
+  {
+    "formula": "=DOLLAR(-0.123,4)",
+    "expected": "($0.1230)"
+  },
+  {
+    "formula": "=DOLLAR(99.888)",
+    "expected": "$99.89"
+  },
+  {
+    "formula": "=DOLLAR(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\")",
+    "expected": "red"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\",2)",
+    "expected": "red-blue"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\",-1)",
+    "expected": "red-blue"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"Red riding hood\",\"RED\",1,1)",
+    "expected": ""
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"+\")",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"+\",1,0,0,\"missing\")",
+    "expected": "missing"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\",3)",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\",3,0,1)",
+    "expected": "red-blue-green"
+  },
+  {
+    "formula": "=TEXTBEFORE(\"red-blue-green\",\"-\",0)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"-\")",
+    "expected": "blue-green"
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"-\",2)",
+    "expected": "green"
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"-\",-1)",
+    "expected": "green"
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"-\",-2)",
+    "expected": "blue-green"
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"+\",1,0,1)",
+    "expected": ""
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"-\",-3,0,1)",
+    "expected": "red-blue-green"
+  },
+  {
+    "formula": "=TEXTAFTER(\"RED-blue\",\"red\",1,1)",
+    "expected": "-blue"
+  },
+  {
+    "formula": "=TEXTAFTER(\"red-blue-green\",\"+\")",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=TEXTAFTER(1/0,\"-\")",
+    "expected": "#DIV/0!"
   }
 ]
