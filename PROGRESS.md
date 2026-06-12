@@ -149,7 +149,9 @@
 
 ## Fase 4 — Producto 🔶 EN CURSO
 
-- [ ] `toJSON`/`fromJSON`, undo/redo
+- [x] `toJSON`/`fromJSON`, undo/redo (2026-06-12)
+  - `toJSON()` serializa config completa, slots de hoja (`null` = hueco de hoja borrada → los ids estables sobreviven el round-trip), contenidos crudos (fórmulas como texto, errores como display string `{error: "#N/A"}`) y named expressions; las sombras de derrame NO viajan (se recomputan en `fromJSON`). `Engine.fromJSON()` reconstruye vía `batch` + `addNamedExpression` y arranca con historial vacío
+  - Undo/redo por deltas: `applyContent` anota el contenido previo de cada celda tocada en el registro activo (`withUndo` en cada mutación pública — un mecanismo cubre celdas, batch como un solo paso, copyCell, nombres y hojas); deshacer aplica el registro capturando su inverso con los mismos hooks → redo gratis. `removeSheet` deshecho restaura celdas y lectores externos (el `#REF!` venía del slot vacío, no de las fórmulas). Tope de historial 100; una edición nueva limpia el redo; `canUndo`/`canRedo`
 - [x] Funciones financieras (2026-06-12): **207 funciones totales** — PMT/FV/PV/NPER/RATE/IPMT/PPMT (familia TVM sobre `PV·(1+r)^n + PMT·(1+r·type)·((1+r)^n−1)/r + FV = 0`; RATE por Newton con `expm1`/`log1p` para no perder precisión con raíces ~0), NPV/IRR/MIRR (IRR Newton con derivada analítica; sin flujo de cada signo → `#NUM!`), SLN/SYD/DB/DDB (DB con tasa redondeada a 3 decimales y primer/último año parcial por `month`; DDB con tope para no bajar del valor residual). Todas con golden y nombre es (PAGO, VF, VA, NPER, TASA, PAGOINT, PAGOPRIN, VNA, TIR, TIRM...)
   - Divergencias LO fijadas a Excel: RATE/IRR/MIRR salen del CSV formateados como `%` (expected numérico manual), `NPV(-1,...)` → `#DIV/0!` (LO `#NUM!`), `SYD` con periodo > vida → `#NUM!` (LO devuelve 0), `IPMT` con periodo 0 → `#NUM!` (LO Err:502)
 - [ ] Benchmarks y optimización (objetivo: recálculo parcial sub-100ms en ~100k+ celdas)

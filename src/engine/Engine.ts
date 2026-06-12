@@ -13,6 +13,7 @@ import type { EvaluationContext } from '../evaluator/context';
 import { evaluateAst } from '../evaluator/interpreter';
 import { buildDefaultRegistry } from '../functions/index';
 import type { FunctionRegistry } from '../functions/registry';
+import { errorLiteralToType } from '../lexer/lexer';
 import { parseFormula } from '../parser/parser';
 import { cellAddressFromKey, cellAddressKey, parseCellReference } from '../reference/addressing';
 import type { SimpleCellAddress, SimpleCellRange } from '../reference/types';
@@ -34,6 +35,30 @@ export interface ChangedCell {
   /** The new computed value; null when the cell is now empty. */
   value: ScalarValue | null;
 }
+
+/** A serialized cell or name content: errors travel as their display string. */
+type JsonContent = string | number | boolean | { error: string };
+
+/** JSON-serializable workbook state (toJSON/fromJSON round trip). */
+export interface EngineStateJson {
+  version: 1;
+  config: EngineConfig;
+  /** Sheet slot array; null marks a removed sheet's permanent hole. */
+  sheets: (string | null)[];
+  /** Formulas as their text ("=SUM(...)"); spilled shadows are recomputed. */
+  cells: { sheet: number; col: number; row: number; content: JsonContent }[];
+  namedExpressions: { name: string; content: JsonContent }[];
+}
+
+/** One undo/redo step: the raw contents (and sheet slots) to put back. */
+interface UndoRecord {
+  cells: { address: SimpleCellAddress; content: RawCellContent }[];
+  /** Slot values to restore; an undefined name turns the slot back into a hole. */
+  sheetSlots: { id: number; name: string | undefined }[];
+}
+
+/** Edits older than this fall off the undo history. */
+const MAX_HISTORY = 100;
 
 type Cell =
   | { kind: 'value'; value: ScalarValue }
@@ -88,6 +113,10 @@ export class Engine {
   private spillDisturbances: SimpleCellAddress[] = [];
   /** Shadow cells cleared inside applyContent; drained by recalculate. */
   private spillCleared: ChangedCell[] = [];
+  private readonly undoStack: UndoRecord[] = [];
+  private readonly redoStack: UndoRecord[] = [];
+  /** Set while a public mutation runs; applyContent records prior contents here. */
+  private recording: { record: UndoRecord; seen: Set<string> } | undefined;
 
   private constructor(config?: Partial<EngineConfig>) {
     this.config = buildConfig(config);
@@ -122,13 +151,16 @@ export class Engine {
     } else if (this.getSheetId(sheetName) !== undefined) {
       throw new Error(`Sheet "${sheetName}" already exists`);
     }
-    this.sheets.push(sheetName);
-    // Volatile formulas (SHEETS()...) must see the new sheet right away; the
-    // resulting ChangedCells are dropped to keep the historical signature.
-    if (!this.pending) {
-      this.recalculate([]);
-    }
-    return this.sheets.length - 1;
+    return this.withUndo(() => {
+      this.noteSheetSlot(this.sheets.length); // current value: undefined
+      this.sheets.push(sheetName);
+      // Volatile formulas (SHEETS()...) must see the new sheet right away; the
+      // resulting ChangedCells are dropped to keep the historical signature.
+      if (!this.pending) {
+        this.recalculate([]);
+      }
+      return this.sheets.length - 1;
+    });
   }
 
   /**
@@ -140,16 +172,20 @@ export class Engine {
     if (this.pending) {
       throw new Error('removeSheet() inside batch() is not supported');
     }
-    const seeds = this.graph.precedentsInSheet(sheet);
-    for (const key of [...this.cells.keys()]) {
-      const address = cellAddressFromKey(key);
-      if (address.sheet === sheet) {
-        this.graph.removeFormula(address);
-        this.cells.delete(key);
+    return this.withUndo(() => {
+      const seeds = this.graph.precedentsInSheet(sheet);
+      this.noteSheetSlot(sheet);
+      for (const key of [...this.cells.keys()]) {
+        const address = cellAddressFromKey(key);
+        if (address.sheet === sheet) {
+          this.noteCell(address);
+          this.graph.removeFormula(address);
+          this.cells.delete(key);
+        }
       }
-    }
-    this.sheets[sheet] = undefined;
-    return this.recalculate(seeds);
+      this.sheets[sheet] = undefined;
+      return this.recalculate(seeds);
+    });
   }
 
   private assertSheet(sheet: number): void {
@@ -174,8 +210,10 @@ export class Engine {
     const id = this.nameId(name);
     this.nameIds.set(name.toLowerCase(), { id, display: name });
     const address: SimpleCellAddress = { sheet: NAMES_SHEET, col: 0, row: id };
-    this.applyContent(address, content);
-    return this.recalculate([address]).filter((change) => change.address.sheet !== NAMES_SHEET);
+    return this.withUndo(() => {
+      this.applyContent(address, content);
+      return this.recalculate([address]).filter((change) => change.address.sheet !== NAMES_SHEET);
+    });
   }
 
   /** Undefines a name; formulas using it go back to #NAME?. */
@@ -189,8 +227,10 @@ export class Engine {
     if (this.pending) {
       throw new Error('removeNamedExpression() inside batch() is not supported');
     }
-    this.applyContent(address, null);
-    return this.recalculate([address]).filter((change) => change.address.sheet !== NAMES_SHEET);
+    return this.withUndo(() => {
+      this.applyContent(address, null);
+      return this.recalculate([address]).filter((change) => change.address.sheet !== NAMES_SHEET);
+    });
   }
 
   /** Defined names, with their original casing. */
@@ -218,15 +258,17 @@ export class Engine {
    */
   setCellContents(address: SimpleCellAddress, content: RawCellContent): ChangedCell[] {
     this.assertSheet(address.sheet);
-    const direct = this.applyContent(address, content);
-    if (this.pending) {
-      this.pending.seeds.push(address);
-      if (direct) {
-        this.pending.direct.push(direct);
+    return this.withUndo(() => {
+      const direct = this.applyContent(address, content);
+      if (this.pending) {
+        this.pending.seeds.push(address);
+        if (direct) {
+          this.pending.direct.push(direct);
+        }
+        return [];
       }
-      return [];
-    }
-    return mergeChanges(direct ? [direct] : [], this.recalculate([address]));
+      return mergeChanges(direct ? [direct] : [], this.recalculate([address]));
+    });
   }
 
   /**
@@ -239,15 +281,17 @@ export class Engine {
       throw new Error('batch() cannot be nested');
     }
     const pending: { seeds: SimpleCellAddress[]; direct: ChangedCell[] } = { seeds: [], direct: [] };
-    this.pending = pending;
-    let changes: ChangedCell[] = [];
-    try {
-      callback();
-    } finally {
-      this.pending = undefined;
-      changes = mergeChanges(pending.direct, this.recalculate(pending.seeds));
-    }
-    return changes;
+    return this.withUndo(() => {
+      this.pending = pending;
+      let changes: ChangedCell[] = [];
+      try {
+        callback();
+      } finally {
+        this.pending = undefined;
+        changes = mergeChanges(pending.direct, this.recalculate(pending.seeds));
+      }
+      return changes;
+    });
   }
 
   /**
@@ -279,6 +323,131 @@ export class Engine {
     return this.setCellContents(target, formula);
   }
 
+  canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
+
+  /** Reverts the latest edit (setCellContents/batch/copyCell/sheet/name op). */
+  undo(): ChangedCell[] {
+    const record = this.undoStack.pop();
+    if (!record) {
+      return [];
+    }
+    const { inverse, changes } = this.applyRecord(record);
+    this.redoStack.push(inverse);
+    return changes;
+  }
+
+  /** Re-applies the latest undone edit. */
+  redo(): ChangedCell[] {
+    const record = this.redoStack.pop();
+    if (!record) {
+      return [];
+    }
+    const { inverse, changes } = this.applyRecord(record);
+    this.undoStack.push(inverse);
+    return changes;
+  }
+
+  /** Applies an undo/redo record, capturing its inverse with the same hooks. */
+  private applyRecord(record: UndoRecord): { inverse: UndoRecord; changes: ChangedCell[] } {
+    if (this.pending) {
+      throw new Error('undo()/redo() inside batch() is not supported');
+    }
+    const recording = { record: { cells: [], sheetSlots: [] } as UndoRecord, seen: new Set<string>() };
+    this.recording = recording;
+    const direct: ChangedCell[] = [];
+    const seeds: SimpleCellAddress[] = [];
+    try {
+      // Sheet slots first, so cell restores land on live sheets.
+      for (const slot of record.sheetSlots) {
+        this.noteSheetSlot(slot.id);
+        if (slot.name === undefined) {
+          // The slot becomes a hole again: drop whatever the sheet holds.
+          for (const key of [...this.cells.keys()]) {
+            const address = cellAddressFromKey(key);
+            if (address.sheet === slot.id) {
+              this.noteCell(address);
+              this.graph.removeFormula(address);
+              this.cells.delete(key);
+              seeds.push(address);
+              direct.push({ address, value: null });
+            }
+          }
+        }
+        this.sheets[slot.id] = slot.name;
+      }
+      for (const { address, content } of record.cells) {
+        const change = this.applyContent(address, content);
+        seeds.push(address);
+        if (change) {
+          direct.push(change);
+        }
+      }
+    } finally {
+      this.recording = undefined;
+    }
+    const changes = mergeChanges(direct, this.recalculate(seeds)).filter(
+      (change) => change.address.sheet !== NAMES_SHEET,
+    );
+    return { inverse: recording.record, changes };
+  }
+
+  /** Serializable workbook state: config, sheet slots, contents and names. */
+  toJSON(): EngineStateJson {
+    const cells: EngineStateJson['cells'] = [];
+    for (const [key, cell] of this.cells) {
+      const address = cellAddressFromKey(key);
+      if (address.sheet === NAMES_SHEET || cell.kind === 'spill') {
+        continue; // names go in their own section; shadows are recomputed
+      }
+      cells.push({
+        sheet: address.sheet,
+        col: address.col,
+        row: address.row,
+        content: cell.kind === 'formula' ? cell.formula : encodeContent(cell.value),
+      });
+    }
+    const namedExpressions: EngineStateJson['namedExpressions'] = [];
+    for (const { id, display } of this.nameIds.values()) {
+      const content = this.rawContentOf({ sheet: NAMES_SHEET, col: 0, row: id });
+      if (content !== null) {
+        namedExpressions.push({ name: display, content: encodeContent(content) });
+      }
+    }
+    return {
+      version: 1,
+      config: { ...this.config },
+      sheets: this.sheets.map((name) => name ?? null),
+      cells,
+      namedExpressions,
+    };
+  }
+
+  /** Rebuilds an engine from toJSON() output (undo history starts empty). */
+  static fromJSON(state: EngineStateJson): Engine {
+    const engine = new Engine(state.config);
+    engine.sheets.length = 0;
+    for (const name of state.sheets) {
+      engine.sheets.push(name ?? undefined);
+    }
+    engine.batch(() => {
+      for (const { sheet, col, row, content } of state.cells) {
+        engine.setCellContents({ sheet, col, row }, decodeContent(content));
+      }
+    });
+    for (const { name, content } of state.namedExpressions) {
+      engine.addNamedExpression(name, decodeContent(content));
+    }
+    engine.undoStack.length = 0;
+    engine.redoStack.length = 0;
+    return engine;
+  }
+
   /** The cell's computed value; null for empty cells. */
   getCellValue(address: SimpleCellAddress): ScalarValue | null {
     const cell = this.cells.get(cellAddressKey(address));
@@ -294,8 +463,64 @@ export class Engine {
     return cell?.kind === 'formula' ? cell.formula : undefined;
   }
 
+  /** The cell's raw editable content: formula text, value, or null (spilled
+   *  shadows count as null — they re-derive from their anchor). */
+  private rawContentOf(address: SimpleCellAddress): RawCellContent {
+    const cell = this.cells.get(cellAddressKey(address));
+    if (!cell || cell.kind === 'spill') {
+      return null;
+    }
+    return cell.kind === 'formula' ? cell.formula : cell.value;
+  }
+
+  /** Runs a public mutation capturing one undo record (no-op when nested). */
+  private withUndo<T>(run: () => T): T {
+    if (this.recording) {
+      return run();
+    }
+    const recording = { record: { cells: [], sheetSlots: [] } as UndoRecord, seen: new Set<string>() };
+    this.recording = recording;
+    try {
+      return run();
+    } finally {
+      this.recording = undefined;
+      if (recording.record.cells.length > 0 || recording.record.sheetSlots.length > 0) {
+        this.undoStack.push(recording.record);
+        if (this.undoStack.length > MAX_HISTORY) {
+          this.undoStack.shift();
+        }
+        this.redoStack.length = 0;
+      }
+    }
+  }
+
+  /** Notes a cell's pre-edit content into the active undo record. */
+  private noteCell(address: SimpleCellAddress): void {
+    if (!this.recording) {
+      return;
+    }
+    const key = cellAddressKey(address);
+    if (!this.recording.seen.has(key)) {
+      this.recording.seen.add(key);
+      this.recording.record.cells.push({ address, content: this.rawContentOf(address) });
+    }
+  }
+
+  /** Notes a sheet slot's pre-edit value into the active undo record. */
+  private noteSheetSlot(id: number): void {
+    if (!this.recording) {
+      return;
+    }
+    const key = `sheet:${id}`;
+    if (!this.recording.seen.has(key)) {
+      this.recording.seen.add(key);
+      this.recording.record.sheetSlots.push({ id, name: this.sheets[id] });
+    }
+  }
+
   /** Updates storage and graph; returns the direct change for non-formula edits. */
   private applyContent(address: SimpleCellAddress, content: RawCellContent): ChangedCell | undefined {
+    this.noteCell(address);
     const key = cellAddressKey(address);
     const previous = this.cells.get(key);
 
@@ -704,6 +929,19 @@ function materialize(value: RawInterpreterValue): ScalarValue {
     return 0;
   }
   return value;
+}
+
+/** ScalarValue -> JSON content (errors as their display string). */
+function encodeContent(value: ScalarValue): JsonContent {
+  return value instanceof CellError ? { error: value.toString() } : value;
+}
+
+/** JSON content -> RawCellContent. */
+function decodeContent(content: JsonContent): RawCellContent {
+  if (typeof content === 'object') {
+    return new CellError(errorLiteralToType(content.error));
+  }
+  return content;
 }
 
 function withinRange(address: SimpleCellAddress, range: SimpleCellRange): boolean {

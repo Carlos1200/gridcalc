@@ -33,7 +33,7 @@ export {
   indexToColLetter,
   parseCellReference,
 } from './reference/addressing';
-export { Engine, type ChangedCell, type RawCellContent } from './engine/Engine';
+export { Engine, type ChangedCell, type EngineStateJson, type RawCellContent } from './engine/Engine';
 export type {
   CellReference,
   RangeReference,
