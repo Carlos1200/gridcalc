@@ -108,6 +108,10 @@ function toOdfFormula(formula: string): string {
       result += `[.${token.text}]`;
     } else if (token.type === TokenType.ARG_SEP) {
       result += ';';
+    } else if (token.type === TokenType.ARRAY_ROW_SEP) {
+      // ODF array constants split columns with `;` and rows with `|`; the
+      // en-config column separator (ARG_SEP `,`) is already mapped above.
+      result += '|';
     } else if (token.type === TokenType.BOOLEAN) {
       // ODF spells boolean literals as functions.
       result += `${token.text.toUpperCase()}()`;

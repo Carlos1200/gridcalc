@@ -179,11 +179,81 @@ class Parser {
       case TokenType.OP_PLUS:
         return { type: 'UNARY_OP', op: '+', operand: this.parseExpression(UNARY_BINDING_POWER) };
       case TokenType.ARRAY_OPEN:
-        throw new FormulaSyntaxError('Array literals are not supported yet (phase 3)');
+        return this.parseArrayLiteral();
       case TokenType.END:
         throw new FormulaSyntaxError('Unexpected end of formula');
       default:
         throw new FormulaSyntaxError(`Unexpected "${token.text}" at position ${token.start}`);
+    }
+  }
+
+  /**
+   * Array constant after its `{`: rows of scalar literals. The column
+   * separator is `,` when that is the argument separator and `\` otherwise
+   * (Excel es writes `{1\2;3\4}`); the row separator is always `;`, which in
+   * `;`-argument locales arrives as an ARG_SEP token.
+   */
+  private parseArrayLiteral(): Ast {
+    const commaColumns = this.config.argumentSeparator === ',';
+    const isColSep = (type: TokenType): boolean =>
+      type === (commaColumns ? TokenType.ARG_SEP : TokenType.ARRAY_COL_SEP);
+    const isRowSep = (type: TokenType): boolean =>
+      type === (commaColumns ? TokenType.ARRAY_ROW_SEP : TokenType.ARG_SEP);
+
+    const values: Ast[][] = [];
+    let row: Ast[] = [];
+    for (;;) {
+      row.push(this.parseArrayElement());
+      const next = this.advance();
+      if (isColSep(next.type)) {
+        continue;
+      }
+      if (isRowSep(next.type)) {
+        values.push(row);
+        row = [];
+        continue;
+      }
+      if (next.type === TokenType.ARRAY_CLOSE) {
+        values.push(row);
+        break;
+      }
+      throw new FormulaSyntaxError(`Unexpected "${next.text}" in array constant`);
+    }
+    if (values.some((cells) => cells.length !== values[0]!.length)) {
+      throw new FormulaSyntaxError('Array constant rows must have the same length');
+    }
+    return { type: 'ARRAY_LITERAL', values };
+  }
+
+  /** Array constants allow only scalar literals (optionally negated numbers). */
+  private parseArrayElement(): Ast {
+    const token = this.advance();
+    switch (token.type) {
+      case TokenType.NUMBER:
+        return { type: 'NUMBER', value: this.parseNumber(token.text) };
+      case TokenType.OP_MINUS: {
+        const next = this.advance();
+        if (next.type !== TokenType.NUMBER) {
+          throw new FormulaSyntaxError('Only numbers can be negated in an array constant');
+        }
+        return { type: 'NUMBER', value: -this.parseNumber(next.text) };
+      }
+      case TokenType.STRING:
+        return { type: 'STRING', value: token.text.slice(1, -1).replace(/""/g, '"') };
+      case TokenType.BOOLEAN:
+        return {
+          type: 'BOOLEAN',
+          value: booleanLiteralValue(token.text.toUpperCase(), this.config.locale) === true,
+        };
+      case TokenType.ERROR_LITERAL:
+        return {
+          type: 'ERROR',
+          error: new CellError(errorLiteralToType(token.text, this.config.locale)),
+        };
+      default:
+        throw new FormulaSyntaxError(
+          `Array constants allow only numbers, text, booleans and errors, got "${token.text}"`,
+        );
     }
   }
 

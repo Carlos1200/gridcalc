@@ -115,10 +115,14 @@ export function serializeAst(
     }
     case 'EMPTY_ARG':
       return '';
-    case 'ARRAY_LITERAL':
+    case 'ARRAY_LITERAL': {
+      // Excel array constants: columns split by `,`, or by `\` in locales
+      // whose argument separator is `;` (es writes {1\2;3\4}); rows by `;`.
+      const colSep = config.argumentSeparator === ',' ? ',' : '\\';
       return `{${ast.values
-        .map((row) => row.map((item) => serializeAst(item, config, sheetName)).join(config.argumentSeparator))
+        .map((row) => row.map((item) => serializeAst(item, config, sheetName)).join(colSep))
         .join(';')}}`;
+    }
   }
 }
 

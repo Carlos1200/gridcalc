@@ -59,6 +59,7 @@ const SINGLE_CHAR_TOKENS: Readonly<Record<string, TokenType>> = {
   ':': TokenType.RANGE_OP,
   '{': TokenType.ARRAY_OPEN,
   '}': TokenType.ARRAY_CLOSE,
+  '\\': TokenType.ARRAY_COL_SEP,
 };
 
 const isDigit = (ch: string): boolean => ch >= '0' && ch <= '9';
@@ -200,6 +201,13 @@ export function tokenize(input: string, config: EngineConfig = DEFAULT_CONFIG): 
     if (ch === config.argumentSeparator) {
       i++;
       push(TokenType.ARG_SEP, start);
+      continue;
+    }
+
+    // `;` that is not the argument separator only appears in array literals.
+    if (ch === ';') {
+      i++;
+      push(TokenType.ARRAY_ROW_SEP, start);
       continue;
     }
 

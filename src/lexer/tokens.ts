@@ -27,6 +27,10 @@ export enum TokenType {
   OP_GTE = 'OP_GTE',
   ARRAY_OPEN = 'ARRAY_OPEN',
   ARRAY_CLOSE = 'ARRAY_CLOSE',
+  /** `;` when it is not the argument separator (array row separator in en). */
+  ARRAY_ROW_SEP = 'ARRAY_ROW_SEP',
+  /** `\` (array column separator in locales whose argument separator is `;`). */
+  ARRAY_COL_SEP = 'ARRAY_COL_SEP',
   END = 'END',
 }
 

@@ -1,0 +1,34 @@
+[
+  {
+    "formula": "=SUM({1,2;3,4})",
+    "expected": 10
+  },
+  {
+    "formula": "=INDEX({1,2;3,4},2,2)",
+    "expected": 4
+  },
+  {
+    "formula": "=AVERAGE({1,2,3,10})",
+    "expected": 4
+  },
+  {
+    "formula": "=MAX({5,-3,8})",
+    "expected": 8
+  },
+  {
+    "formula": "=SUM({1,\"2\",TRUE})",
+    "expected": 1
+  },
+  {
+    "formula": "=VLOOKUP(2,{1,\"a\";2,\"b\"},2)",
+    "expected": "b"
+  },
+  {
+    "formula": "=SUM({1,2})+SUM({3;4})",
+    "expected": 10
+  },
+  {
+    "formula": "=COUNT({1,\"x\",3})",
+    "expected": 2
+  }
+]

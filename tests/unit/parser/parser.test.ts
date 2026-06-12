@@ -140,7 +140,8 @@ describe('localization', () => {
 
 describe('error tolerance', () => {
   it('returns PARSE_ERROR nodes instead of throwing', () => {
-    for (const bad of ['=SUM(1', '=1+', '=', '=1 2', '={1,2}', '=)', '="abc']) {
+    // ({1,2} stopped being an error in phase 3: array literals parse now.)
+    for (const bad of ['=SUM(1', '=1+', '=', '=1 2', '={1,2;3}', '=)', '="abc']) {
       const parsed = parseFormula(bad);
       expect(parsed.type, `for formula ${JSON.stringify(bad)}`).toBe('PARSE_ERROR');
       if (parsed.type === 'PARSE_ERROR') {
