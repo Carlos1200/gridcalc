@@ -36,6 +36,8 @@ const BINARY_BINDING_POWER: Partial<Record<TokenType, number>> = {
 };
 const PERCENT_BINDING_POWER = 7;
 const UNARY_BINDING_POWER = 8;
+/** Excel's space (intersection) binds tighter than unary minus, looser than `:`. */
+const INTERSECT_BINDING_POWER = 8.5;
 const RANGE_BINDING_POWER = 9;
 
 /** Resolves a sheet name (case-insensitive) to its index; undefined = unknown. */
@@ -90,6 +92,19 @@ class Parser {
       if (token.type === TokenType.OP_PERCENT && PERCENT_BINDING_POWER > minBindingPower) {
         this.advance();
         left = { type: 'UNARY_OP', op: '%', operand: left };
+        continue;
+      }
+
+      if (
+        token.spaceBefore === true &&
+        (token.type === TokenType.CELL_REF || token.type === TokenType.SHEET_NAME) &&
+        INTERSECT_BINDING_POWER > minBindingPower &&
+        (left.type === 'CELL_REFERENCE' || left.type === 'RANGE_REFERENCE' ||
+          (left.type === 'BINARY_OP' && left.op === ' '))
+      ) {
+        // Intersection operator: a space between two references.
+        const right = this.parseExpression(INTERSECT_BINDING_POWER);
+        left = { type: 'BINARY_OP', op: ' ', left, right };
         continue;
       }
 

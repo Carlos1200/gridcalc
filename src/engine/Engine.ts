@@ -321,7 +321,9 @@ export class Engine {
 
     if (typeof content === 'string' && content.startsWith('=')) {
       const ast = parseFormula(content, this.config, (name) => this.getSheetId(name));
-      const deps = extractDependencies(ast, address);
+      // The static volatile set covers not-yet-implemented names (OFFSET...);
+      // the registry contributes everything flagged volatile at runtime.
+      const deps = extractDependencies(ast, address, this.functions.volatileNames());
       if (
         address.sheet === NAMES_SHEET &&
         (deps.cells.some((cell) => cell.sheet === NAMES_SHEET) ||

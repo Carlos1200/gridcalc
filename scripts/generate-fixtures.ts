@@ -104,6 +104,10 @@ function toOdfFormula(formula: string): string {
     if (token.type === TokenType.END) {
       break;
     }
+    // ODF spells the intersection operator (space between references) as `!`.
+    if (token.spaceBefore === true && token.type === TokenType.CELL_REF && /\]$/.test(result)) {
+      result += '!';
+    }
     if (
       token.type === TokenType.CELL_REF &&
       tokens[i + 1]?.type === TokenType.RANGE_OP &&

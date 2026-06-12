@@ -32,6 +32,7 @@ const BINARY_POWER: Record<BinaryOperator, number> = {
   '*': 5,
   '/': 5,
   '^': 6,
+  ' ': 8.5, // intersection: tighter than unary minus, looser than ':'
 };
 const PERCENT_POWER = 7;
 const UNARY_POWER = 8;

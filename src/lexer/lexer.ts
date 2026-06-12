@@ -229,5 +229,12 @@ export function tokenize(input: string, config: EngineConfig = DEFAULT_CONFIG): 
   }
 
   tokens.push({ type: TokenType.END, text: '', start: input.length });
+  // Whitespace is skipped above; recover it as a flag so the parser can see
+  // Excel's intersection operator (`=SUM(A1:B3 B2:C4)`).
+  for (const token of tokens) {
+    if (token.start > 0 && isWhitespace(input[token.start - 1]!)) {
+      token.spaceBefore = true;
+    }
+  }
   return tokens;
 }

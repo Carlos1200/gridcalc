@@ -40,4 +40,6 @@ export interface Token {
   text: string;
   /** Offset into the formula body (after the leading "="). */
   start: number;
+  /** Whitespace preceded this token (Excel's intersection operator). */
+  spaceBefore?: boolean;
 }

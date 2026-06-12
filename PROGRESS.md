@@ -46,7 +46,7 @@
   - Propagación de errores: operandos izquierda-primero; error real gana a fallo de coerción; rango en contexto escalar → `#VALUE!` (sin intersección implícita en Fase 1)
   - Las funciones reciben args crudos (eager) o ASTs (lazy para IF/IFERROR/AND/OR con cortocircuito); cada función hace sus propias coerciones
 - [x] `functions/registry.ts` — `FunctionRegistry` por motor (case-insensitive, duplicados lanzan), metadata (`minArgs`/`maxArgs`/`volatile`/`argHandling: scalar|range-aware|lazy`); arity inválida → `#N/A`, función desconocida → `#NAME?`
-  - Pendiente: unificar `VOLATILE_FUNCTIONS` (hoy set estático en `dependency/extract.ts`) con el flag `volatile` del registro cuando existan las funciones
+  - ~~Pendiente: unificar `VOLATILE_FUNCTIONS` con el flag `volatile` del registro~~ → hecho en Fase 3 (2026-06-12)
 - [x] **~40 funciones de Fase 1, cada una con golden tests** (206 fixtures generados contra LibreOffice; las listas fuente viven en `tests/golden/formulas/*.json` y se regeneran con `npm run generate-fixtures`):
   - [x] math: SUM, ROUND, ROUNDUP, ROUNDDOWN, ABS, SQRT, POWER, MOD, INT
   - [x] statistical: AVERAGE, COUNT, COUNTA, MIN, MAX, SUMIF, COUNTIF
@@ -127,7 +127,7 @@
   - Golden de lo verificable en LO (FORMULATEXT vía el nombre ODF `FORMULA`; `ISFORMULA("x")` y `FORMULATEXT("x")` fijados a `#VALUE!` Excel, LO da FALSE/`#N/A`); el resto (fórmulas como input, multi-hoja) con unit tests sobre el Engine, como ROW/COLUMN
 - [ ] Siguiente expansión (opcional): TEXTSPLIT y OFFSET/INDIRECT quedan para Fase 3 (arrays/volátiles); COVARIANCE.P/.S y demás variantes modernas con punto cuando se quiera
 
-## Fase 3 — Dynamic arrays 🔶 EN CURSO
+## Fase 3 — Dynamic arrays ✅ COMPLETA (2026-06-12)
 
 - [x] Broadcasting (2026-06-12): operadores binarios/unarios y funciones escalares (no range-aware) se aplican elemento a elemento sobre args array (`liftOverArrays` en el intérprete). Reglas Excel: fila/columna/1x1 se estiran, posiciones sin pareja en formas >1 incompatibles → `#N/A` por elemento; errores escalares de nivel superior propagan antes del lifting; `+` unario sigue siendo no-op (también sobre arrays). Reemplaza el "rango en contexto escalar → `#VALUE!`" de Fase 1. Divergencia LO: no difunde rangos fuera de modo matriz (`=SUM(A1:A2+1)` → `#VALUE!`), fijado a Excel (7)
 - [x] Spilling, `#SPILL!`, arrays como valores (2026-06-12) — ✅ criterio de fase cumplido (derrame actualiza adyacentes; colisión → `#SPILL!` con recuperación al liberar)
@@ -136,12 +136,12 @@
   - `recalculate` itera a punto fijo (cap 32 pasadas): cada pasada re-planifica desde las celdas (des)cubiertas; las volátiles solo se siembran en la pasada inicial (RAND no se re-tira por pasada). Ancla que lee su propia huella → `#CIRCULAR!` real vía el grafo
   - Nombres no derraman (sin grid): se quedan el valor superior-izquierdo. `copyCell` de celda derramada pega el valor
 - [x] Array literals `{1,2;3,4}` (2026-06-12): constantes de array con solo literales escalares (números con `-` opcional, texto, booleanos, errores), filas rectangulares o PARSE_ERROR. Separador de columna `,` (en) o `\` (es, `{1\2,5;3\4}`); filas siempre `;` (token `ARRAY_ROW_SEP` cuando `;` no es separador de argumentos). El serializador emite la grafía del locale; el generador traduce a ODF (`{1;2|3;4}`). Divergencia LO: rechaza booleanos en constantes (Err:539), fijado a Excel
-- [ ] Whitespace como operador de intersección
+- [x] Whitespace como operador de intersección (2026-06-12): el lexer marca `spaceBefore` en los tokens (recuperado por offset tras el tokenizado); el parser construye `BINARY_OP ' '` solo cuando ambos lados son referencias (poder 8.5: más fuerte que `-` unario, más débil que `:`); el evaluador resuelve estructuralmente el rectángulo solapado (1x1 → escalar, mayor → array que derrama, disjunto o entre hojas → `#NULL!`); `=1 2` sigue siendo PARSE_ERROR. El generador lo traduce al `!` de ODF; golden contra LO incluido `#NULL!`
 - [x] FILTER, SORT, SORTBY, UNIQUE, SEQUENCE, XLOOKUP, XMATCH (2026-06-12): **190 funciones totales**, todas con golden (envueltas en SUM/INDEX/CONCAT para que LO devuelva escalares; en ODF van como `COM.MICROSOFT.*`) y nombre es (FILTRAR, ORDENAR, ORDENARPOR, UNICOS, SECUENCIA, BUSCARX, COINCIDIRX)
   - SEQUENCE relleno row-major, dimensión 0 → `#CALC!`, negativa → `#VALUE!`; UNIQUE por filas (o columnas con `by_col`), igualdad case-insensitive, `exactly_once`; SORT estable por índice de columna (orden 1/-1, `by_col`); SORTBY multi-clave con vectores paralelos; FILTER por filas o columnas según la dimensión del include, sin matches → `if_empty` o `#CALC!`
   - XMATCH/XLOOKUP comparten núcleo: match_mode 0/-1/1/2 (comodines), search_mode 1/-1/2/-2 (binaria asc/desc sobre datos ordenados — la coordenada de búsqueda se niega para -2, los punteros NO); XLOOKUP devuelve la fila/columna emparejada (multi-columna → derrama), `if_not_found`
   - Integración: FILTER remodela su derrame al editar datos (crecer, encoger a `#CALC!` limpiando sombras), XLOOKUP derrama la fila, SORT re-ordena en vivo
-- [ ] Volátiles bien integradas en el ciclo de recálculo
+- [x] Volátiles bien integradas en el ciclo de recálculo (2026-06-12): `FunctionRegistry` mantiene el set de nombres con `volatile: true` y `extractDependencies` lo recibe como parámetro extra (el set estático `VOLATILE_FUNCTIONS` sigue cubriendo nombres aún no implementados como OFFSET/INDIRECT). Funciones custom registradas como volátiles se re-evalúan en cada edición (test incluido); cierra el pendiente de Fase 1
 
 ## Fase 4 — Producto ⬜ PENDIENTE
 

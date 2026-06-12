@@ -165,5 +165,41 @@
   {
     "formula": "=XMATCH(30,{30;20;10},0,-2)",
     "expected": 1
+  },
+  {
+    "formula": "=SUM(A1:B3 B2:C4)",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "B3": 5,
+      "C3": 6
+    },
+    "expected": 9
+  },
+  {
+    "formula": "=A1:B2 B2:C3",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "B3": 5,
+      "C3": 6
+    },
+    "expected": 4
+  },
+  {
+    "formula": "=A1:A2 B1:B2",
+    "inputs": {
+      "A1": 1,
+      "B1": 2,
+      "A2": 3,
+      "B2": 4,
+      "B3": 5,
+      "C3": 6
+    },
+    "expected": "#NULL!"
   }
 ]

@@ -47,7 +47,12 @@ function resolveReference(ref: CellReference, formulaAddress: SimpleCellAddress)
  * reference it contains. Relative/absolute flags do not matter here: by parse
  * time `col`/`row` are already concrete indices.
  */
-export function extractDependencies(ast: Ast, formulaAddress: SimpleCellAddress): FormulaDependencies {
+export function extractDependencies(
+  ast: Ast,
+  formulaAddress: SimpleCellAddress,
+  /** Extra volatile names (e.g. from a FunctionRegistry's volatile flags). */
+  extraVolatile?: ReadonlySet<string>,
+): FormulaDependencies {
   const cells = new Map<string, SimpleCellAddress>();
   const ranges = new Map<string, SimpleCellRange>();
   const names = new Set<string>();
@@ -75,7 +80,7 @@ export function extractDependencies(ast: Ast, formulaAddress: SimpleCellAddress)
         names.add(node.name);
         break;
       case 'FUNCTION_CALL':
-        if (VOLATILE_FUNCTIONS.has(node.name)) {
+        if (VOLATILE_FUNCTIONS.has(node.name) || extraVolatile?.has(node.name)) {
           volatile = true;
         }
         for (const arg of node.args) {

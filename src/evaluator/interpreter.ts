@@ -164,7 +164,57 @@ function evaluateUnaryOp(ast: UnaryOpAst, context: EvaluationContext): RawInterp
   });
 }
 
+/** The rectangle a reference-shaped AST denotes; #VALUE! for anything else. */
+function referenceRect(ast: Ast, context: EvaluationContext): SimpleCellRange | CellError {
+  if (ast.type === 'CELL_REFERENCE') {
+    const at = resolveAddress(ast.reference, context.formulaAddress);
+    return { start: at, end: at };
+  }
+  if (ast.type === 'RANGE_REFERENCE') {
+    return resolveRange(ast.start, ast.end, context.formulaAddress);
+  }
+  if (ast.type === 'BINARY_OP' && ast.op === ' ') {
+    const left = referenceRect(ast.left, context);
+    if (left instanceof CellError) {
+      return left;
+    }
+    const right = referenceRect(ast.right, context);
+    if (right instanceof CellError) {
+      return right;
+    }
+    if (left.start.sheet !== right.start.sheet) {
+      return new CellError(CellErrorType.NULL, 'Ranges on different sheets do not intersect');
+    }
+    const rect: SimpleCellRange = {
+      start: {
+        sheet: left.start.sheet,
+        col: Math.max(left.start.col, right.start.col),
+        row: Math.max(left.start.row, right.start.row),
+      },
+      end: {
+        sheet: left.start.sheet,
+        col: Math.min(left.end.col, right.end.col),
+        row: Math.min(left.end.row, right.end.row),
+      },
+    };
+    if (rect.start.col > rect.end.col || rect.start.row > rect.end.row) {
+      return new CellError(CellErrorType.NULL, 'The ranges do not intersect');
+    }
+    return rect;
+  }
+  return new CellError(CellErrorType.VALUE, 'Intersection needs references on both sides');
+}
+
 function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInterpreterValue {
+  if (ast.op === ' ') {
+    const rect = referenceRect(ast, context);
+    if (rect instanceof CellError) {
+      return rect;
+    }
+    return rect.start.col === rect.end.col && rect.start.row === rect.end.row
+      ? context.getCellValue(rect.start)
+      : context.getRangeValues(rect);
+  }
   const leftValue = evaluateAst(ast.left, context);
   const rightValue = evaluateAst(ast.right, context);
   if (leftValue instanceof CellError) {
@@ -191,6 +241,9 @@ function applyBinaryOp(
     return right;
   }
   switch (op) {
+    case ' ':
+      // Intersections are resolved structurally in evaluateBinaryOp.
+      return new CellError(CellErrorType.VALUE, 'Intersection needs references on both sides');
     case '+':
     case '-':
     case '*':

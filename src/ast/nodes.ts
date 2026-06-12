@@ -65,7 +65,9 @@ export type BinaryOperator =
   | '<'
   | '>'
   | '<='
-  | '>=';
+  | '>='
+  /** Excel's space operator: range intersection (phase 3). */
+  | ' ';
 
 export interface BinaryOpAst {
   type: 'BINARY_OP';
