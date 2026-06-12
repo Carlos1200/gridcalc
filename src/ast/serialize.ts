@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_CONFIG, type EngineConfig } from '../config/types';
-import { toLocalizedName } from '../i18n/index';
+import { toLocalizedBoolean, toLocalizedErrorText, toLocalizedName } from '../i18n/index';
 import { formatCellReference, parseCellReference } from '../reference/addressing';
 import type { CellReference } from '../reference/types';
 import { CellError, CellErrorType } from '../value/types';
@@ -80,10 +80,10 @@ export function serializeAst(
     case 'STRING':
       return `"${ast.value.replace(/"/g, '""')}"`;
     case 'BOOLEAN':
-      return ast.value ? 'TRUE' : 'FALSE';
+      return toLocalizedBoolean(ast.value, config.locale);
     case 'ERROR':
     case 'PARSE_ERROR':
-      return ast.error.toString();
+      return toLocalizedErrorText(ast.error.type, ast.error.toString(), config.locale);
     case 'CELL_REFERENCE': {
       const prefix = sheetPrefix(ast.reference.sheet, sheetName);
       return prefix === undefined ? '#REF!' : prefix + formatCellReference(ast.reference);

@@ -1,3 +1,25 @@
+import { CellErrorType } from '../value/types';
+
+/** Boolean literals as es-ES Excel spells them. */
+export const ES_BOOLEAN_LITERALS: Readonly<Record<'TRUE' | 'FALSE', string>> = {
+  TRUE: 'VERDADERO',
+  FALSE: 'FALSO',
+};
+
+/**
+ * Error literals as es-ES Excel spells them. Errors without an entry
+ * (engine-specific ones like #CIRCULAR!) keep their canonical spelling.
+ */
+export const ES_ERROR_LITERALS: ReadonlyArray<readonly [string, CellErrorType]> = [
+  ['#¿NOMBRE?', CellErrorType.NAME],
+  ['#¡DIV/0!', CellErrorType.DIV_BY_ZERO],
+  ['#¡VALOR!', CellErrorType.VALUE],
+  ['#¡NULO!', CellErrorType.NULL],
+  ['#¡NUM!', CellErrorType.NUM],
+  ['#¡REF!', CellErrorType.REF],
+  ['#N/D', CellErrorType.NA],
+];
+
 /**
  * Spanish (es-ES Excel) function names for the built-in library,
  * canonical -> localized. Both spellings are accepted on input; this map

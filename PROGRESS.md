@@ -2,7 +2,7 @@
 
 > Documento de seguimiento para sesiones de trabajo. Marcar ítems al completarlos.
 > La especificación completa está en `docs/SPEC.md` (fuente de verdad del diseño).
-> Última actualización: 2026-06-11.
+> Última actualización: 2026-06-12.
 
 ## Decisiones tomadas
 
@@ -85,7 +85,7 @@
   - `adjustReferences`: desplaza partes relativas, respeta `$`, fuera de la cuadrícula → `#REF!`; valores se copian tal cual; fórmulas rotas (PARSE_ERROR) se copian verbatim
   - "Mover" (cut/paste con reescritura de referencias entrantes) queda pendiente para más adelante
 - [x] Traducción de nombres de función en `i18n/`: las 40 funciones con nombres es-ES (`=SUMA`→SUM, `=SI.ERROR`→IFERROR...). El AST siempre lleva el nombre canónico inglés; el parser traduce al entrar y el serializador (y por tanto `copyCell`) emite el localizado. Los nombres canónicos se aceptan en cualquier locale
-  - Pendiente de i18n: literales booleanos (`VERDADERO`/`FALSO`) y de error localizados
+  - [x] Literales booleanos (`VERDADERO`/`FALSO`) y de error (`#¡DIV/0!`, `#N/D`, `#¿NOMBRE?`...) localizados (2026-06-12): el lexer/parser aceptan la grafía es además de la canónica; el serializador (y `copyCell`) emiten la localizada; errores sin grafía es (`#CIRCULAR!`, `#ERROR!`) conservan la canónica
 - [x] Primera tanda de expansión: **66 funciones totales** (2026-06-11), todas con golden y nombre es
   - math: PRODUCT, CEILING, FLOOR, SUMPRODUCT — divergencia LO: con significancia negativa LO intercambia el redondeo de CEILING/FLOOR (`CEILING(-2.5,-2)` LO=-2, Excel=-4) y rechaza signo mixto `(-2.5, 2)` con Err:502; fixtures con `expected` manual a lo Excel
   - statistical: COUNTIFS, SUMIFS, AVERAGEIF, AVERAGEIFS (rangos de criterio con forma distinta → `#VALUE!`)

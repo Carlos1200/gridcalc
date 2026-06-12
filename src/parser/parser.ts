@@ -16,7 +16,7 @@ import { CellError, CellErrorType } from '../value/types';
 import { DEFAULT_CONFIG, type EngineConfig } from '../config/types';
 import { FormulaSyntaxError, errorLiteralToType, tokenize } from '../lexer/lexer';
 import { TokenType, type Token } from '../lexer/tokens';
-import { toCanonicalName } from '../i18n/index';
+import { booleanLiteralValue, toCanonicalName } from '../i18n/index';
 import { parseCellReference } from '../reference/addressing';
 import type { Ast, BinaryOperator } from '../ast/nodes';
 
@@ -131,9 +131,15 @@ class Parser {
       case TokenType.STRING:
         return { type: 'STRING', value: token.text.slice(1, -1).replace(/""/g, '"') };
       case TokenType.BOOLEAN:
-        return { type: 'BOOLEAN', value: token.text.toUpperCase() === 'TRUE' };
+        return {
+          type: 'BOOLEAN',
+          value: booleanLiteralValue(token.text.toUpperCase(), this.config.locale) === true,
+        };
       case TokenType.ERROR_LITERAL:
-        return { type: 'ERROR', error: new CellError(errorLiteralToType(token.text)) };
+        return {
+          type: 'ERROR',
+          error: new CellError(errorLiteralToType(token.text, this.config.locale)),
+        };
       case TokenType.CELL_REF: {
         const reference = parseCellReference(token.text);
         if (!reference) {

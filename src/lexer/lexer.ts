@@ -8,6 +8,7 @@
 
 import { CellErrorType } from '../value/types';
 import { DEFAULT_CONFIG, type EngineConfig } from '../config/types';
+import { booleanLiteralValue, localizedErrorLiterals } from '../i18n';
 import { parseCellReference } from '../reference/addressing';
 import { TokenType, type Token } from './tokens';
 
@@ -28,9 +29,14 @@ const ERROR_LITERALS: ReadonlyArray<readonly [string, CellErrorType]> = [
   ['#N/A', CellErrorType.NA],
 ];
 
-export function errorLiteralToType(text: string): CellErrorType {
+export function errorLiteralToType(
+  text: string,
+  locale: EngineConfig['locale'] = DEFAULT_CONFIG.locale,
+): CellErrorType {
   const upper = text.toUpperCase();
-  const match = ERROR_LITERALS.find(([literal]) => literal === upper);
+  const match = [...localizedErrorLiterals(locale), ...ERROR_LITERALS].find(
+    ([literal]) => literal === upper,
+  );
   if (!match) {
     throw new FormulaSyntaxError(`Unknown error literal "${text}"`);
   }
@@ -123,10 +129,12 @@ export function tokenize(input: string, config: EngineConfig = DEFAULT_CONFIG): 
       continue;
     }
 
-    // Error literal: #DIV/0!, #N/A, ...
+    // Error literal: #DIV/0!, #N/A, and localized spellings (#¡DIV/0!...).
     if (ch === '#') {
       const rest = input.slice(i).toUpperCase();
-      const literal = ERROR_LITERALS.find(([text]) => rest.startsWith(text));
+      const literal = [...localizedErrorLiterals(config.locale), ...ERROR_LITERALS].find(
+        ([text]) => rest.startsWith(text),
+      );
       if (!literal) {
         throw new FormulaSyntaxError(`Unknown error literal at position ${i}`);
       }
@@ -180,7 +188,7 @@ export function tokenize(input: string, config: EngineConfig = DEFAULT_CONFIG): 
         type = TokenType.FUNCTION_NAME;
       } else if (parseCellReference(text)) {
         type = TokenType.CELL_REF;
-      } else if (/^(true|false)$/i.test(text)) {
+      } else if (booleanLiteralValue(text.toUpperCase(), config.locale) !== undefined) {
         type = TokenType.BOOLEAN;
       } else {
         type = TokenType.NAMED_EXPR;
