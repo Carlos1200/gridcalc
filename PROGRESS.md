@@ -127,8 +127,9 @@
   - Golden de lo verificable en LO (FORMULATEXT vía el nombre ODF `FORMULA`; `ISFORMULA("x")` y `FORMULATEXT("x")` fijados a `#VALUE!` Excel, LO da FALSE/`#N/A`); el resto (fórmulas como input, multi-hoja) con unit tests sobre el Engine, como ROW/COLUMN
 - [ ] Siguiente expansión (opcional): TEXTSPLIT y OFFSET/INDIRECT quedan para Fase 3 (arrays/volátiles); COVARIANCE.P/.S y demás variantes modernas con punto cuando se quiera
 
-## Fase 3 — Dynamic arrays ⬜ PENDIENTE
+## Fase 3 — Dynamic arrays 🔶 EN CURSO
 
+- [x] Broadcasting (2026-06-12): operadores binarios/unarios y funciones escalares (no range-aware) se aplican elemento a elemento sobre args array (`liftOverArrays` en el intérprete). Reglas Excel: fila/columna/1x1 se estiran, posiciones sin pareja en formas >1 incompatibles → `#N/A` por elemento; errores escalares de nivel superior propagan antes del lifting; `+` unario sigue siendo no-op (también sobre arrays). Reemplaza el "rango en contexto escalar → `#VALUE!`" de Fase 1. Divergencia LO: no difunde rangos fuera de modo matriz (`=SUM(A1:A2+1)` → `#VALUE!`), fijado a Excel (7)
 - [ ] Spilling, `#SPILL!`, arrays como valores
 - [x] Array literals `{1,2;3,4}` (2026-06-12): constantes de array con solo literales escalares (números con `-` opcional, texto, booleanos, errores), filas rectangulares o PARSE_ERROR. Separador de columna `,` (en) o `\` (es, `{1\2,5;3\4}`); filas siempre `;` (token `ARRAY_ROW_SEP` cuando `;` no es separador de argumentos). El serializador emite la grafía del locale; el generador traduce a ODF (`{1;2|3;4}`). Divergencia LO: rechaza booleanos en constantes (Err:539), fijado a Excel
 - [ ] Whitespace como operador de intersección

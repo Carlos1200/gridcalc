@@ -30,5 +30,40 @@
   {
     "formula": "=COUNT({1,\"x\",3})",
     "expected": 2
+  },
+  {
+    "formula": "=SUM({1,2}*{3,4})",
+    "expected": 11
+  },
+  {
+    "formula": "=SUM({1;2}+{10,20})",
+    "expected": 66
+  },
+  {
+    "formula": "=SUM(ABS({-1,2,-3}))",
+    "expected": 6
+  },
+  {
+    "formula": "=SUM(LEN({\"a\",\"bb\"}))",
+    "expected": 3
+  },
+  {
+    "formula": "=CONCAT({\"a\",\"b\"}&\"-\")",
+    "expected": "a-b-"
+  },
+  {
+    "formula": "=SUM(({1,2,3}>1)*1)",
+    "expected": 2
+  },
+  {
+    "formula": "=SUM(-{1,2})",
+    "expected": -3
+  },
+  {
+    "formula": "=SUM(A1:A2+1)",
+    "inputs": {
+      "A1": 5
+    },
+    "expected": 7
   }
 ]

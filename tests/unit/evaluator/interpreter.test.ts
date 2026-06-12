@@ -176,8 +176,9 @@ describe('references and empty cells', () => {
     expect(display(evaluate('=1/0+A1', { A1: ref }))).toBe('#DIV/0!');
   });
 
-  it('rejects a range where a single value is required', () => {
-    expect(display(evaluate('=A1:A2+1', { A1: 1, A2: 2 }))).toBe('#VALUE!');
+  it('broadcasts a range in scalar context elementwise (phase 3)', () => {
+    // Phase 1 rejected this with #VALUE!; dynamic arrays lift it instead.
+    expect(evaluate('=A1:A2+1', { A1: 1, A2: 2 })).toEqual([[2], [3]]);
   });
 });
 

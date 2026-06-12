@@ -73,12 +73,54 @@ function resolveRange(
   };
 }
 
-/** A range where a single value is required -> #VALUE! (no implicit intersection in phase 1). */
-function toScalar(value: RawInterpreterValue): RawScalarValue {
-  if (Array.isArray(value)) {
-    return new CellError(CellErrorType.VALUE, 'Expected a single value, got a range');
+/**
+ * Dynamic-array lifting (phase 3): applies a scalar operation elementwise
+ * when any argument is an array. Excel broadcasting rules: a 1-row side
+ * stretches down, a 1-column side stretches right, a 1x1 side stretches both;
+ * positions a larger side has but a (>1)-sized smaller side lacks are #N/A.
+ */
+export function liftOverArrays(
+  args: RawInterpreterValue[],
+  apply: (scalars: RawScalarValue[]) => RawInterpreterValue,
+): RawInterpreterValue {
+  if (!args.some((arg) => Array.isArray(arg))) {
+    return apply(args as RawScalarValue[]);
   }
-  return value;
+  let rows = 1;
+  let cols = 1;
+  for (const arg of args) {
+    if (Array.isArray(arg)) {
+      rows = Math.max(rows, arg.length);
+      cols = Math.max(cols, arg[0]?.length ?? 0);
+    }
+  }
+  const result: RawInterpreterValue[][] = [];
+  for (let r = 0; r < rows; r++) {
+    const out: RawInterpreterValue[] = [];
+    for (let c = 0; c < cols; c++) {
+      const scalars: RawScalarValue[] = [];
+      let missing = false;
+      for (const arg of args) {
+        if (!Array.isArray(arg)) {
+          scalars.push(arg);
+          continue;
+        }
+        const argRows = arg.length;
+        const argCols = arg[0]?.length ?? 0;
+        const ri = argRows === 1 ? 0 : r;
+        const ci = argCols === 1 ? 0 : c;
+        if (ri >= argRows || ci >= argCols) {
+          missing = true;
+          break;
+        }
+        // Range/array elements are always scalars (no nested arrays).
+        scalars.push(arg[ri]![ci] as RawScalarValue);
+      }
+      out.push(missing ? new CellError(CellErrorType.NA, 'Arrays differ in size') : apply(scalars));
+    }
+    result.push(out);
+  }
+  return result;
 }
 
 function evaluateFunctionCall(ast: FunctionCallAst, context: EvaluationContext): RawInterpreterValue {
@@ -96,10 +138,12 @@ function evaluateFunctionCall(ast: FunctionCallAst, context: EvaluationContext):
   if (isLazyFunction(registered)) {
     return registered.fn(ast.args, context);
   }
-  return registered.fn(
-    ast.args.map((arg) => evaluateAst(arg, context)),
-    context,
-  );
+  const args = ast.args.map((arg) => evaluateAst(arg, context));
+  if (registered.metadata.argHandling !== 'range-aware') {
+    // Scalar functions lift over array arguments: =ABS({-1,2}) -> {1,2}.
+    return liftOverArrays(args, (scalars) => registered.fn(scalars, context));
+  }
+  return registered.fn(args, context);
 }
 
 function evaluateUnaryOp(ast: UnaryOpAst, context: EvaluationContext): RawInterpreterValue {
@@ -107,19 +151,17 @@ function evaluateUnaryOp(ast: UnaryOpAst, context: EvaluationContext): RawInterp
   if (value instanceof CellError) {
     return value;
   }
-  switch (ast.op) {
-    case '+':
-      // Excel's unary plus is a no-op on any operand, even text: =+"abc" -> "abc".
-      return value;
-    case '-': {
-      const n = coerceToNumber(toScalar(value));
-      return n instanceof CellError ? n : -n;
-    }
-    case '%': {
-      const n = coerceToNumber(toScalar(value));
-      return n instanceof CellError ? n : n / 100;
-    }
+  if (ast.op === '+') {
+    // Excel's unary plus is a no-op on any operand, even text: =+"abc" -> "abc".
+    return value;
   }
+  return liftOverArrays([value], ([scalar]) => {
+    const n = coerceToNumber(scalar!);
+    if (n instanceof CellError) {
+      return n;
+    }
+    return ast.op === '-' ? -n : n / 100;
+  });
 }
 
 function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInterpreterValue {
@@ -131,22 +173,30 @@ function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInte
   if (rightValue instanceof CellError) {
     return rightValue;
   }
-  const left = toScalar(leftValue);
+  return liftOverArrays([leftValue, rightValue], ([left, right]) =>
+    applyBinaryOp(ast.op, left!, right!, context),
+  );
+}
+
+function applyBinaryOp(
+  op: BinaryOpAst['op'],
+  left: RawScalarValue,
+  right: RawScalarValue,
+  context: EvaluationContext,
+): RawInterpreterValue {
   if (left instanceof CellError) {
     return left;
   }
-  const right = toScalar(rightValue);
   if (right instanceof CellError) {
     return right;
   }
-
-  switch (ast.op) {
+  switch (op) {
     case '+':
     case '-':
     case '*':
     case '/':
     case '^':
-      return arithmetic(ast.op, left, right, context.config.precisionRounding);
+      return arithmetic(op, left, right, context.config.precisionRounding);
     case '&': {
       const l = coerceToString(left);
       if (l instanceof CellError) {
@@ -162,7 +212,7 @@ function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInte
     case '<=':
     case '>=': {
       const cmp = compareScalars(left, right);
-      switch (ast.op) {
+      switch (op) {
         case '=':
           return cmp === 0;
         case '<>':
