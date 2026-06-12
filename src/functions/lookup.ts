@@ -3,7 +3,9 @@
 import type { Ast } from '../ast/nodes';
 import type { EvaluationContext } from '../evaluator/context';
 import { evaluateAst } from '../evaluator/interpreter';
+import { parseFormula } from '../parser/parser';
 import { indexToColLetter } from '../reference/addressing';
+import type { SimpleCellAddress, SimpleCellRange } from '../reference/types';
 import {
   CellError,
   CellErrorType,
@@ -85,6 +87,83 @@ function asVector(matrix: RawInterpreterValue[][]): RawScalarValue[] | undefined
   }
   if (matrix.length === 1) {
     return matrix[0]!.map((cell) => asScalar(cell));
+  }
+  return undefined;
+}
+
+/** Reads a rectangle through the context: 1x1 -> scalar, larger -> array. */
+function readRect(rect: SimpleCellRange, context: EvaluationContext): RawInterpreterValue {
+  return rect.start.col === rect.end.col && rect.start.row === rect.end.row
+    ? context.getCellValue(rect.start)
+    : context.getRangeValues(rect);
+}
+
+/**
+ * One end of an R1C1 reference ("R3C2", "R[1]C[-2]", "R", "RC3") resolved
+ * against the formula cell. Sheet prefixes are not supported in R1C1 mode.
+ */
+function parseR1C1(text: string, base: SimpleCellAddress): SimpleCellAddress | undefined {
+  const match = /^R(?:\[(?<rrel>-?\d+)\]|(?<rabs>\d+))?C(?:\[(?<crel>-?\d+)\]|(?<cabs>\d+))?$/i.exec(
+    text.trim(),
+  );
+  if (!match?.groups) {
+    return undefined;
+  }
+  const { rrel, rabs, crel, cabs } = match.groups;
+  const row = rrel !== undefined ? base.row + Number(rrel) : rabs !== undefined ? Number(rabs) - 1 : base.row;
+  const col = crel !== undefined ? base.col + Number(crel) : cabs !== undefined ? Number(cabs) - 1 : base.col;
+  if (row < 0 || col < 0) {
+    return undefined;
+  }
+  return { sheet: base.sheet, col, row };
+}
+
+/** The rectangle INDIRECT's text denotes, or undefined when it is no reference. */
+function indirectRect(
+  text: string,
+  a1: boolean,
+  context: EvaluationContext,
+): SimpleCellRange | undefined {
+  const base = context.formulaAddress;
+  if (!a1) {
+    const [startText, endText] = text.split(':', 2);
+    const start = parseR1C1(startText ?? '', base);
+    if (!start) {
+      return undefined;
+    }
+    const end = endText === undefined ? start : parseR1C1(endText, base);
+    if (!end) {
+      return undefined;
+    }
+    return {
+      start: { sheet: base.sheet, col: Math.min(start.col, end.col), row: Math.min(start.row, end.row) },
+      end: { sheet: base.sheet, col: Math.max(start.col, end.col), row: Math.max(start.row, end.row) },
+    };
+  }
+  // A1 style: reuse the real parser (handles $, sheet prefixes and quoting).
+  const ast = parseFormula(`=${text}`, context.config, (name) => context.sheetIdByName(name));
+  if (ast.type === 'CELL_REFERENCE') {
+    const at = {
+      sheet: ast.reference.sheet ?? base.sheet,
+      col: ast.reference.col,
+      row: ast.reference.row,
+    };
+    return { start: at, end: at };
+  }
+  if (ast.type === 'RANGE_REFERENCE') {
+    const sheet = ast.start.sheet ?? base.sheet;
+    return {
+      start: {
+        sheet,
+        col: Math.min(ast.start.col, ast.end.col),
+        row: Math.min(ast.start.row, ast.end.row),
+      },
+      end: {
+        sheet,
+        col: Math.max(ast.start.col, ast.end.col),
+        row: Math.max(ast.start.row, ast.end.row),
+      },
+    };
   }
   return undefined;
 }
@@ -536,6 +615,110 @@ export const lookupFunctions: RegisteredFunction[] = [
       return column.length === 1
         ? materializeCell(column[0])
         : column.map((cell) => [cell]);
+    },
+  },
+  {
+    // OFFSET(reference, rows, cols, [height], [width]) -> shifted/resized
+    // reference. Lazy (inspects the reference) and volatile (its real
+    // precedents cannot be known statically).
+    metadata: { name: 'OFFSET', minArgs: 3, maxArgs: 5, argHandling: 'lazy', volatile: true },
+    fn: (args: Ast[], context: EvaluationContext): RawInterpreterValue => {
+      const base = args[0]!;
+      let rect: SimpleCellRange;
+      if (base.type === 'CELL_REFERENCE') {
+        const at = {
+          sheet: base.reference.sheet ?? context.formulaAddress.sheet,
+          col: base.reference.col,
+          row: base.reference.row,
+        };
+        rect = { start: at, end: at };
+      } else if (base.type === 'RANGE_REFERENCE') {
+        const sheet = base.start.sheet ?? context.formulaAddress.sheet;
+        rect = {
+          start: {
+            sheet,
+            col: Math.min(base.start.col, base.end.col),
+            row: Math.min(base.start.row, base.end.row),
+          },
+          end: {
+            sheet,
+            col: Math.max(base.start.col, base.end.col),
+            row: Math.max(base.start.row, base.end.row),
+          },
+        };
+      } else {
+        return new CellError(CellErrorType.VALUE, 'OFFSET needs a reference');
+      }
+      const numericArg = (index: number, fallback: number): number | CellError => {
+        const ast = args[index];
+        if (ast === undefined) {
+          return fallback;
+        }
+        const value = evaluateAst(ast, context);
+        if (value === EmptyValue) {
+          return fallback;
+        }
+        const n = asNumber(value);
+        return n instanceof CellError ? n : Math.trunc(n);
+      };
+      const rows = numericArg(1, 0);
+      if (rows instanceof CellError) {
+        return rows;
+      }
+      const cols = numericArg(2, 0);
+      if (cols instanceof CellError) {
+        return cols;
+      }
+      const height = numericArg(3, rect.end.row - rect.start.row + 1);
+      if (height instanceof CellError) {
+        return height;
+      }
+      const width = numericArg(4, rect.end.col - rect.start.col + 1);
+      if (width instanceof CellError) {
+        return width;
+      }
+      if (height <= 0 || width <= 0) {
+        return new CellError(CellErrorType.REF, 'OFFSET height/width must be positive');
+      }
+      const start = {
+        sheet: rect.start.sheet,
+        col: rect.start.col + cols,
+        row: rect.start.row + rows,
+      };
+      if (start.col < 0 || start.row < 0) {
+        return new CellError(CellErrorType.REF, 'OFFSET walked off the grid');
+      }
+      return readRect(
+        {
+          start,
+          end: { sheet: start.sheet, col: start.col + width - 1, row: start.row + height - 1 },
+        },
+        context,
+      );
+    },
+  },
+  {
+    // INDIRECT(ref_text, [a1=TRUE]) -> the reference the text denotes at
+    // runtime. Volatile: the graph cannot see through the text.
+    metadata: { name: 'INDIRECT', minArgs: 1, maxArgs: 2, argHandling: 'range-aware', volatile: true },
+    fn: (args: RawInterpreterValue[], context: EvaluationContext): RawInterpreterValue => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      let a1 = true;
+      if (args[1] !== undefined && args[1] !== EmptyValue) {
+        const flag = asBoolean(args[1]);
+        if (flag instanceof CellError) {
+          return flag;
+        }
+        a1 = flag;
+      }
+      const rect = indirectRect(text.trim(), a1, context);
+      if (!rect) {
+        return new CellError(CellErrorType.REF, `"${text}" is not a valid reference`);
+      }
+      return readRect(rect, context);
     },
   },
 ];

@@ -440,5 +440,93 @@
   {
     "formula": "=FORMULATEXT(\"x\")",
     "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SUM(OFFSET(A1,1,0,2,2))",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": 55
+  },
+  {
+    "formula": "=OFFSET(A1,2,1)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": 30
+  },
+  {
+    "formula": "=OFFSET(A1,-1,0)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": "#REF!"
+  },
+  {
+    "formula": "=SUM(OFFSET(A1:B1,1,0))",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": 22
+  },
+  {
+    "formula": "=INDIRECT(\"A2\")",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=SUM(INDIRECT(\"A1:B2\"))",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": 33
+  },
+  {
+    "formula": "=INDIRECT(\"foo\")",
+    "expected": "#REF!"
+  },
+  {
+    "formula": "=INDIRECT(\"R2C1\",FALSE)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 10,
+      "B2": 20,
+      "B3": 30
+    },
+    "expected": 2
   }
 ]

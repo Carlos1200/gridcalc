@@ -156,8 +156,8 @@ export function wildcardMatch(pattern: string, text: string): boolean {
   return new RegExp(`^${wildcardToRegExpSource(pattern)}$`, 'is').test(text);
 }
 
-function escapeRegExp(char: string): string {
-  return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 type CriteriaOp = '=' | '<>' | '<' | '>' | '<=' | '>=';

@@ -625,6 +625,7 @@ export class Engine {
         const id = this.getSheetId(name);
         return id === undefined ? undefined : this.sheetPosition(id);
       },
+      sheetIdByName: (name) => this.getSheetId(name),
       countSheets: () => this.getSheetNames().length,
     };
   }

@@ -248,5 +248,10 @@
   "=TEXTAFTER(\"red-blue-green\",\"-\",-3,0,1)",
   "=TEXTAFTER(\"RED-blue\",\"red\",1,1)",
   "=TEXTAFTER(\"red-blue-green\",\"+\")",
-  "=TEXTAFTER(1/0,\"-\")"
+  "=TEXTAFTER(1/0,\"-\")",
+  "=INDEX(TEXTSPLIT(\"a,b;c,d\",\",\",\";\"),2,1)",
+  "=CONCAT(TEXTSPLIT(\"a-b-c\",\"-\"))",
+  "=INDEX(TEXTSPLIT(\"a,b;c\",\",\",\";\"),2,2)",
+  "=CONCAT(TEXTSPLIT(\"a,,b\",\",\",,TRUE))",
+  "=CONCAT(TEXTSPLIT(\"aXbxc\",\"x\",,,1))"
 ]

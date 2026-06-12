@@ -513,5 +513,25 @@
   {
     "formula": "=TEXTAFTER(1/0,\"-\")",
     "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=INDEX(TEXTSPLIT(\"a,b;c,d\",\",\",\";\"),2,1)",
+    "expected": "c"
+  },
+  {
+    "formula": "=CONCAT(TEXTSPLIT(\"a-b-c\",\"-\"))",
+    "expected": "abc"
+  },
+  {
+    "formula": "=INDEX(TEXTSPLIT(\"a,b;c\",\",\",\";\"),2,2)",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=CONCAT(TEXTSPLIT(\"a,,b\",\",\",,TRUE))",
+    "expected": "ab"
+  },
+  {
+    "formula": "=CONCAT(TEXTSPLIT(\"aXbxc\",\"x\",,,1))",
+    "expected": "abc"
   }
 ]

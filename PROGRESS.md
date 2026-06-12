@@ -125,7 +125,11 @@
   - ISFORMULA/FORMULATEXT lazy sobre la referencia (rangos → celda superior izquierda; no-referencia → `#VALUE!`); FORMULATEXT devuelve el texto localizado (`=SUMA(1;2)` bajo es) o `#N/A` sin fórmula. NO son volátiles: editar la celda referenciada ya recalcula dependientes vía el grafo
   - SHEET/SHEETS marcadas volátiles (en Excel no lo son, pero responden sobre la forma del workbook, que el grafo no rastrea); `addSheet` ahora dispara recálculo (descarta los `ChangedCell` para no romper la firma) → `=SHEETS()` se actualiza al añadir/quitar hojas. SHEET devuelve posición 1-based entre hojas vivas (ids estables ≠ posición tras `removeSheet`), acepta referencia o nombre (case-insensitive; desconocido → `#N/A`, otro tipo → `#VALUE!`); SHEETS(ref) → 1 (sin rangos 3D), no-ref → `#REF!`
   - Golden de lo verificable en LO (FORMULATEXT vía el nombre ODF `FORMULA`; `ISFORMULA("x")` y `FORMULATEXT("x")` fijados a `#VALUE!` Excel, LO da FALSE/`#N/A`); el resto (fórmulas como input, multi-hoja) con unit tests sobre el Engine, como ROW/COLUMN
-- [ ] Siguiente expansión (opcional): TEXTSPLIT y OFFSET/INDIRECT quedan para Fase 3 (arrays/volátiles); COVARIANCE.P/.S y demás variantes modernas con punto cuando se quiera
+- [x] OFFSET/INDIRECT/TEXTSPLIT (2026-06-12, tras completar Fase 3): **193 funciones totales**, con golden y nombre es (DESREF, INDIRECTO, DIVIDIRTEXTO)
+  - OFFSET lazy+volátil: desplaza/redimensiona la referencia (alto/ancho ≤ 0 o fuera del grid → `#REF!`, LO da Err:502); ventanas >1x1 derraman
+  - INDIRECT volátil con `sheetIdByName` nuevo en el contexto: modo A1 reutiliza el parser real (maneja `$`, hojas con comillas), modo R1C1 con offsets relativos `R[1]C[-2]` (sin prefijo de hoja en R1C1); texto no-referencia → `#REF!`. Al ser volátiles se re-evalúan en cada edición aunque el grafo no vea sus precedentes reales (limitación documentada: dentro de una misma pasada el orden respecto a su objetivo no está garantizado)
+  - TEXTSPLIT: separadores de fila/columna escalares (vacío → `#VALUE!`), `ignore_empty`, match_mode case-insensitive, relleno de filas cortas con `pad_with` (por defecto `#N/A`); todo vacío → `#CALC!`
+- [ ] Siguiente expansión (opcional): COVARIANCE.P/.S y demás variantes modernas con punto cuando se quiera
 
 ## Fase 3 — Dynamic arrays ✅ COMPLETA (2026-06-12)
 

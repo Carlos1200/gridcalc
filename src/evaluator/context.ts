@@ -21,6 +21,8 @@ export interface EvaluationContext {
   sheetPosition(sheetId: number): number | undefined;
   /** Same, looked up by name (case-insensitive); undefined if unknown. */
   sheetPositionByName(name: string): number | undefined;
+  /** Stable sheet id for a name (case-insensitive); undefined if unknown. INDIRECT needs it. */
+  sheetIdByName(name: string): number | undefined;
   /** How many sheets currently exist. */
   countSheets(): number;
 }

@@ -169,6 +169,7 @@ export const ES_FUNCTION_NAMES: Readonly<Record<string, string>> = {
   DOLLAR: 'MONEDA',
   TEXTBEFORE: 'TEXTOANTES',
   TEXTAFTER: 'TEXTODESPUES',
+  TEXTSPLIT: 'DIVIDIRTEXTO',
   // lookup
   VLOOKUP: 'BUSCARV',
   HLOOKUP: 'BUSCARH',
@@ -184,6 +185,8 @@ export const ES_FUNCTION_NAMES: Readonly<Record<string, string>> = {
   FORMULATEXT: 'FORMULATEXTO',
   XLOOKUP: 'BUSCARX',
   XMATCH: 'COINCIDIRX',
+  OFFSET: 'DESREF',
+  INDIRECT: 'INDIRECTO',
   // arrays (phase 3)
   SEQUENCE: 'SECUENCIA',
   UNIQUE: 'UNICOS',

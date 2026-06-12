@@ -2,7 +2,18 @@
 
 import { coerceToString, numberToText, parseNumericString } from '../value/coercion';
 import { CellError, CellErrorType, EmptyValue, type RawInterpreterValue } from '../value/types';
-import { asBoolean, asNumber, asScalar, asString, forEachScalar, roundScaled, wildcardToRegExpSource } from './helpers';
+import {
+  asBoolean,
+  asNumber,
+  asScalar,
+  asString,
+  escapeRegExp,
+  forEachScalar,
+  optionalFlag,
+  optionalNumber,
+  roundScaled,
+  wildcardToRegExpSource,
+} from './helpers';
 import type { RegisteredFunction } from './types';
 
 /** Excel's hard cap on the length of a text value. */
@@ -520,4 +531,63 @@ export const textFunctions: RegisteredFunction[] = [
   },
   textBeforeAfter('TEXTBEFORE'),
   textBeforeAfter('TEXTAFTER'),
+  {
+    // TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty=FALSE],
+    //           [match_mode=0], [pad_with=#N/A]) -> 2D array.
+    metadata: { name: 'TEXTSPLIT', minArgs: 2, maxArgs: 6, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]): RawInterpreterValue => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      const colDelimiter = asString(args[1]!);
+      if (colDelimiter instanceof CellError) {
+        return colDelimiter;
+      }
+      let rowDelimiter: string | undefined;
+      if (args[2] !== undefined && args[2] !== EmptyValue) {
+        const value = asString(args[2]);
+        if (value instanceof CellError) {
+          return value;
+        }
+        rowDelimiter = value;
+      }
+      const ignoreEmpty = optionalFlag(args, 3);
+      if (ignoreEmpty instanceof CellError) {
+        return ignoreEmpty;
+      }
+      const matchMode = optionalNumber(args, 4, 0);
+      if (matchMode instanceof CellError) {
+        return matchMode;
+      }
+      const padWith =
+        args[5] === undefined || args[5] === EmptyValue
+          ? new CellError(CellErrorType.NA, 'Padding for ragged TEXTSPLIT rows')
+          : asScalar(args[5]);
+      if (colDelimiter === '' || rowDelimiter === '') {
+        return new CellError(CellErrorType.VALUE, 'TEXTSPLIT delimiters cannot be empty');
+      }
+      const splitBy = (input: string, delimiter: string): string[] =>
+        input.split(new RegExp(escapeRegExp(delimiter), matchMode === 1 ? 'gi' : 'g'));
+      let grid = (rowDelimiter === undefined ? [text] : splitBy(text, rowDelimiter)).map((row) =>
+        splitBy(row, colDelimiter),
+      );
+      if (ignoreEmpty) {
+        grid = grid
+          .map((row) => row.filter((cell) => cell !== ''))
+          .filter((row) => row.length > 0);
+      }
+      if (grid.length === 0) {
+        return new CellError(CellErrorType.CALC, 'Empty array result');
+      }
+      const width = Math.max(...grid.map((row) => row.length));
+      return grid.map((row) => {
+        const padded: RawInterpreterValue[] = [...row];
+        while (padded.length < width) {
+          padded.push(padWith);
+        }
+        return padded;
+      });
+    },
+  },
 ];
