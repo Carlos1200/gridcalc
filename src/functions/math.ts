@@ -69,6 +69,46 @@ const ROMAN_DIGITS: Record<string, number> = {
   I: 1,
 };
 
+/** Excel's BIT* functions only accept integers in [0, 2^48). */
+const BIT_LIMIT = 2 ** 48;
+
+function asBitOperand(value: number): bigint | CellError {
+  if (!Number.isInteger(value) || value < 0 || value >= BIT_LIMIT) {
+    return new CellError(CellErrorType.NUM, 'Bitwise operands must be integers in [0, 2^48)');
+  }
+  return BigInt(value);
+}
+
+function bitwise(name: string, op: (a: bigint, b: bigint) => bigint): RegisteredFunction {
+  return numeric2(name, (a, b) => {
+    const left = asBitOperand(a);
+    if (left instanceof CellError) {
+      return left;
+    }
+    const right = asBitOperand(b);
+    return right instanceof CellError ? right : Number(op(left, right));
+  });
+}
+
+/** BITLSHIFT/BITRSHIFT: a negative shift reverses direction; overflow -> #NUM!. */
+function bitShift(name: 'BITLSHIFT' | 'BITRSHIFT', direction: 1 | -1): RegisteredFunction {
+  return numeric2(name, (value, shiftNum) => {
+    const operand = asBitOperand(value);
+    if (operand instanceof CellError) {
+      return operand;
+    }
+    const shift = Math.trunc(shiftNum) * direction;
+    if (Math.abs(shift) > 53) {
+      return new CellError(CellErrorType.NUM, `${name} shift is out of range`);
+    }
+    const result = shift >= 0 ? operand << BigInt(shift) : operand >> BigInt(-shift);
+    if (result >= BigInt(BIT_LIMIT)) {
+      return new CellError(CellErrorType.NUM, `${name} result does not fit in 48 bits`);
+    }
+    return Number(result);
+  });
+}
+
 /** One coerced numeric argument. */
 function numeric1(name: string, fn: (x: number) => number | CellError): RegisteredFunction {
   return {
@@ -328,6 +368,134 @@ export const mathFunctions: RegisteredFunction[] = [
         }
       }
       return out;
+    },
+  },
+  numeric1('SINH', (n) => {
+    const result = Math.sinh(n);
+    return Number.isFinite(result) ? result : new CellError(CellErrorType.NUM, 'Numeric overflow');
+  }),
+  numeric1('COSH', (n) => {
+    const result = Math.cosh(n);
+    return Number.isFinite(result) ? result : new CellError(CellErrorType.NUM, 'Numeric overflow');
+  }),
+  numeric1('TANH', Math.tanh),
+  numeric1('ASINH', Math.asinh),
+  numeric1('ACOSH', (n) =>
+    n < 1 ? new CellError(CellErrorType.NUM, 'ACOSH needs a number >= 1') : Math.acosh(n),
+  ),
+  numeric1('ATANH', (n) =>
+    n <= -1 || n >= 1
+      ? new CellError(CellErrorType.NUM, 'ATANH needs a number in (-1, 1)')
+      : Math.atanh(n),
+  ),
+  numeric2('MROUND', (n, multiple) => {
+    if (multiple === 0) {
+      return 0;
+    }
+    if ((n > 0 && multiple < 0) || (n < 0 && multiple > 0)) {
+      return new CellError(CellErrorType.NUM, 'MROUND arguments must share their sign');
+    }
+    // Halves round away from zero, like Excel.
+    const sign = n < 0 ? -1 : 1;
+    const result =
+      sign * Math.round(cleanQuotient(Math.abs(n), Math.abs(multiple))) * Math.abs(multiple);
+    return result === 0 ? 0 : result;
+  }),
+  {
+    metadata: { name: 'SUMSQ', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      let total = 0;
+      const error = forEachNumber(args, (n) => {
+        total += n * n;
+      });
+      return error ?? total;
+    },
+  },
+  {
+    // BASE(number, radix, minLength=0) -> text in the given radix.
+    metadata: { name: 'BASE', minArgs: 2, maxArgs: 3 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      const radixNum = asNumber(args[1]!);
+      if (radixNum instanceof CellError) {
+        return radixNum;
+      }
+      let minLength = 0;
+      if (args[2] !== undefined) {
+        const minLengthNum = asNumber(args[2]);
+        if (minLengthNum instanceof CellError) {
+          return minLengthNum;
+        }
+        minLength = Math.trunc(minLengthNum);
+      }
+      const value = Math.trunc(n);
+      const radix = Math.trunc(radixNum);
+      if (value < 0 || radix < 2 || radix > 36 || minLength < 0) {
+        return new CellError(CellErrorType.NUM, 'BASE needs a non-negative number and a radix in [2, 36]');
+      }
+      return value.toString(radix).toUpperCase().padStart(minLength, '0');
+    },
+  },
+  {
+    // DECIMAL(text, radix) parses text as a number in the given radix.
+    metadata: { name: 'DECIMAL', minArgs: 2, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const text = asString(args[0]!);
+      if (text instanceof CellError) {
+        return text;
+      }
+      const radixNum = asNumber(args[1]!);
+      if (radixNum instanceof CellError) {
+        return radixNum;
+      }
+      const radix = Math.trunc(radixNum);
+      if (radix < 2 || radix > 36) {
+        return new CellError(CellErrorType.NUM, 'DECIMAL radix must be in [2, 36]');
+      }
+      if (text === '') {
+        return 0;
+      }
+      let total = 0;
+      for (const char of text.toUpperCase()) {
+        const digit = parseInt(char, 36);
+        if (Number.isNaN(digit) || digit >= radix) {
+          return new CellError(CellErrorType.NUM, `"${text}" is not a base-${radix} number`);
+        }
+        total = total * radix + digit;
+      }
+      return total;
+    },
+  },
+  bitwise('BITAND', (a, b) => a & b),
+  bitwise('BITOR', (a, b) => a | b),
+  bitwise('BITXOR', (a, b) => a ^ b),
+  bitShift('BITLSHIFT', 1),
+  bitShift('BITRSHIFT', -1),
+  {
+    // DELTA(a, b=0): 1 when equal, 0 otherwise.
+    metadata: { name: 'DELTA', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const a = asNumber(args[0]!);
+      if (a instanceof CellError) {
+        return a;
+      }
+      const b = args[1] !== undefined ? asNumber(args[1]) : 0;
+      return b instanceof CellError ? b : a === b ? 1 : 0;
+    },
+  },
+  {
+    // GESTEP(n, step=0): 1 when n >= step, 0 otherwise.
+    metadata: { name: 'GESTEP', minArgs: 1, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const n = asNumber(args[0]!);
+      if (n instanceof CellError) {
+        return n;
+      }
+      const step = args[1] !== undefined ? asNumber(args[1]) : 0;
+      return step instanceof CellError ? step : n >= step ? 1 : 0;
     },
   },
   {

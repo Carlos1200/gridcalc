@@ -388,5 +388,41 @@
   {
     "formula": "=COLUMNS(A1:A10)",
     "expected": 1
+  },
+  {
+    "formula": "=ADDRESS(2,3)",
+    "expected": "$C$2"
+  },
+  {
+    "formula": "=ADDRESS(2,3,2)",
+    "expected": "C$2"
+  },
+  {
+    "formula": "=ADDRESS(2,3,3)",
+    "expected": "$C2"
+  },
+  {
+    "formula": "=ADDRESS(2,3,4)",
+    "expected": "C2"
+  },
+  {
+    "formula": "=ADDRESS(2,3,1,FALSE)",
+    "expected": "R2C3"
+  },
+  {
+    "formula": "=ADDRESS(2,3,4,FALSE)",
+    "expected": "R[2]C[3]"
+  },
+  {
+    "formula": "=ADDRESS(2,3,1,TRUE,\"Hoja\")",
+    "expected": "Hoja!$C$2"
+  },
+  {
+    "formula": "=ADDRESS(2,3,1,TRUE,\"Mi Hoja\")",
+    "expected": "'Mi Hoja'!$C$2"
+  },
+  {
+    "formula": "=ADDRESS(0,1)",
+    "expected": "#VALUE!"
   }
 ]

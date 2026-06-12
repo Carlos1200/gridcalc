@@ -659,5 +659,94 @@
       "A4": 4
     },
     "expected": "#NUM!"
+  },
+  {
+    "formula": "=AVEDEV(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 1
+  },
+  {
+    "formula": "=AVEDEV(1,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=DEVSQ(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    },
+    "expected": 5
+  },
+  {
+    "formula": "=GEOMEAN(2,8)",
+    "expected": 4
+  },
+  {
+    "formula": "=GEOMEAN(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 3,
+      "A3": 9
+    },
+    "expected": 3
+  },
+  {
+    "formula": "=GEOMEAN(2,-1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=HARMEAN(2,6)",
+    "expected": 3
+  },
+  {
+    "formula": "=HARMEAN(0,1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=STDEVP(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 6
+    },
+    "expected": 1.4142135623731
+  },
+  {
+    "formula": "=STDEVP(5)",
+    "expected": 0
+  },
+  {
+    "formula": "=VARP(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 6
+    },
+    "expected": 2
+  },
+  {
+    "formula": "=PERMUT(5,2)",
+    "expected": 20
+  },
+  {
+    "formula": "=PERMUT(4,4)",
+    "expected": 24
+  },
+  {
+    "formula": "=PERMUT(0,0)",
+    "expected": 1
+  },
+  {
+    "formula": "=PERMUT(2,3)",
+    "expected": "#NUM!"
   }
 ]

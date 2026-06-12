@@ -110,7 +110,13 @@
   - text: UNICHAR/UNICODE (rechaza surrogates), FIXED (redondeo half-away, separador de miles; resultado sin comas fijado como string — el CSV lo convierte a número)
   - information: TYPE (1/2/4/16/64; `TYPE(TRUE)` fijado a 4 — LO da 1 porque trata booleanos como números), ISREF (lazy, inspecciona el AST)
   - YEARFRAC pospuesta (bases 30/360 y actual/actual con reglas Excel propias); OFFSET/INDIRECT siguen para Fase 3 (volátiles, grafo)
-- [ ] Seguir subiendo hacia ~150 ← SIGUIENTE PASO (YEARFRAC, SINH/COSH/TANH/ASINH/ACOSH/ATANH, MROUND, SUMSQ, POWER ya está; AVEDEV/DEVSQ/GEOMEAN/HARMEAN/STDEVP/VARP/PERMUT, DOLLAR, LEFT/RIGHT con LEN ya; ADDRESS, FORMULATEXT, ISFORMULA, SHEET/SHEETS, BASE/DECIMAL2 (BASE/DECIMAL de Excel), BITAND/BITOR/BITXOR/BITLSHIFT/BITRSHIFT, DELTA/GESTEP...)
+- [x] Cuarta tanda de expansión: **163 funciones totales** (2026-06-11) — ✅ objetivo de ~150 superado
+  - math: SINH/COSH/TANH/ASINH/ACOSH/ATANH, MROUND (mitades alejándose de cero; signos distintos → `#NUM!`), SUMSQ, BASE/DECIMAL (radix 2-36; ojo: el nombre es de FIXED es `DECIMAL` y el de DECIMAL es `CONV.DECIMAL`), BITAND/BITOR/BITXOR/BITLSHIFT/BITRSHIFT (enteros en [0, 2^48) vía BigInt; decimales → `#NUM!`), DELTA/GESTEP
+  - statistical: AVEDEV, DEVSQ, GEOMEAN/HARMEAN (solo positivos), STDEVP/VARP (poblacionales, denominador n), PERMUT
+  - datetime: YEARFRAC (las 5 bases: 30/360 US y europeo, actual/actual con reglas Excel de denominador — mismo año bisiesto → 366, multianual → media de los años tocados —, actual/360, actual/365; orden de args indiferente, devuelve positivo)
+  - lookup: ADDRESS (abs 1-4, estilos A1 y R1C1, hoja opcional con quoting `''` — fijado a sintaxis Excel `Hoja!$C$2`, LO emite `Hoja.$C$2`)
+  - ISFORMULA/FORMULATEXT/SHEET/SHEETS pendientes: necesitan ampliar `EvaluationContext` (saber si una celda tiene fórmula / su texto / contar hojas)
+- [ ] Siguiente expansión (opcional, ya por encima del objetivo): DOLLAR, TEXTBEFORE/TEXTAFTER/TEXTSPLIT (Excel 365 — revisar soporte LO para golden), COVAR/CORREL/SLOPE/INTERCEPT/FORECAST, NORMDIST y familia, ISFORMULA/FORMULATEXT/SHEET/SHEETS (con extensión del contexto), OFFSET/INDIRECT (Fase 3)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

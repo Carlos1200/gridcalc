@@ -328,5 +328,45 @@
       "A1": 46188
     },
     "expected": 9
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,1),DATE(2026,7,1))",
+    "expected": 0.5
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,30),DATE(2026,3,31))",
+    "expected": 0.166666666666667
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,1),DATE(2026,7,1),1)",
+    "expected": 0.495890410958904
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2024,1,1),DATE(2024,7,1),1)",
+    "expected": 0.497267759562842
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2023,6,1),DATE(2026,6,1),1)",
+    "expected": 3.00068446269678
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,1),DATE(2026,7,1),2)",
+    "expected": 0.502777777777778
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,1),DATE(2026,7,1),3)",
+    "expected": 0.495890410958904
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,31),DATE(2026,3,31),4)",
+    "expected": 0.166666666666667
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,7,1),DATE(2026,1,1))",
+    "expected": 0.5
+  },
+  {
+    "formula": "=YEARFRAC(DATE(2026,1,1),DATE(2026,7,1),5)",
+    "expected": "#NUM!"
   }
 ]

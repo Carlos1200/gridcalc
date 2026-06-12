@@ -3,6 +3,7 @@
 import type { Ast } from '../ast/nodes';
 import type { EvaluationContext } from '../evaluator/context';
 import { evaluateAst } from '../evaluator/interpreter';
+import { indexToColLetter } from '../reference/addressing';
 import {
   CellError,
   CellErrorType,
@@ -10,7 +11,7 @@ import {
   type RawInterpreterValue,
   type RawScalarValue,
 } from '../value/types';
-import { asBoolean, asMatrix, asNumber, asScalar } from './helpers';
+import { asBoolean, asMatrix, asNumber, asScalar, asString } from './helpers';
 import type { RegisteredFunction } from './types';
 
 /** Exact lookup equality: type-strict, text case-insensitive. */
@@ -248,6 +249,56 @@ export const lookupFunctions: RegisteredFunction[] = [
   rowColumn('COLUMN'),
   dimension('ROWS'),
   dimension('COLUMNS'),
+  {
+    // ADDRESS(row, col, abs=1, a1=TRUE, sheet) -> reference text like "$C$2".
+    metadata: { name: 'ADDRESS', minArgs: 2, maxArgs: 5 },
+    fn: (args: RawInterpreterValue[]) => {
+      const rowNum = asNumber(args[0]!);
+      if (rowNum instanceof CellError) {
+        return rowNum;
+      }
+      const colNum = asNumber(args[1]!);
+      if (colNum instanceof CellError) {
+        return colNum;
+      }
+      let absStyle = 1;
+      if (args[2] !== undefined) {
+        const absNum = asNumber(args[2]);
+        if (absNum instanceof CellError) {
+          return absNum;
+        }
+        absStyle = Math.trunc(absNum);
+      }
+      let a1 = true;
+      if (args[3] !== undefined) {
+        const a1Flag = asBoolean(args[3]);
+        if (a1Flag instanceof CellError) {
+          return a1Flag;
+        }
+        a1 = a1Flag;
+      }
+      const row = Math.trunc(rowNum);
+      const col = Math.trunc(colNum);
+      if (row < 1 || col < 1 || absStyle < 1 || absStyle > 4) {
+        return new CellError(CellErrorType.VALUE, 'ADDRESS position is out of range');
+      }
+      const rowAbsolute = absStyle === 1 || absStyle === 2;
+      const colAbsolute = absStyle === 1 || absStyle === 3;
+      const reference = a1
+        ? (colAbsolute ? '$' : '') + indexToColLetter(col - 1) + (rowAbsolute ? '$' : '') + row
+        : `R${rowAbsolute ? row : `[${row}]`}C${colAbsolute ? col : `[${col}]`}`;
+      if (args[4] === undefined) {
+        return reference;
+      }
+      const sheet = asString(args[4]);
+      if (sheet instanceof CellError) {
+        return sheet;
+      }
+      const needsQuotes = !/^[A-Za-z_][A-Za-z0-9_]*$/.test(sheet);
+      const prefix = needsQuotes ? `'${sheet.replace(/'/g, "''")}'` : sheet;
+      return `${prefix}!${reference}`;
+    },
+  },
   {
     metadata: { name: 'LOOKUP', minArgs: 2, maxArgs: 3, argHandling: 'range-aware' },
     fn: (args: RawInterpreterValue[]) => {

@@ -574,5 +574,68 @@
       "A4": 4
     },
     "expected": "#NUM!"
+  },
+  {
+    "formula": "=AVEDEV(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    }
+  },
+  "=AVEDEV(1,1/0)",
+  {
+    "formula": "=DEVSQ(A1:A4)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "A4": 4
+    }
+  },
+  "=GEOMEAN(2,8)",
+  {
+    "formula": "=GEOMEAN(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 3,
+      "A3": 9
+    }
+  },
+  {
+    "formula": "=GEOMEAN(2,-1)",
+    "expected": "#NUM!"
+  },
+  "=HARMEAN(2,6)",
+  {
+    "formula": "=HARMEAN(0,1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=STDEVP(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 6
+    }
+  },
+  "=STDEVP(5)",
+  {
+    "formula": "=VARP(A1:A4)",
+    "inputs": {
+      "A1": 2,
+      "A2": 4,
+      "A3": 4,
+      "A4": 6
+    }
+  },
+  "=PERMUT(5,2)",
+  "=PERMUT(4,4)",
+  "=PERMUT(0,0)",
+  {
+    "formula": "=PERMUT(2,3)",
+    "expected": "#NUM!"
   }
 ]

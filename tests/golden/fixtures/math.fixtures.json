@@ -676,5 +676,178 @@
   {
     "formula": "=ARABIC(\"ABC\")",
     "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SINH(1)",
+    "expected": 1.1752011936438
+  },
+  {
+    "formula": "=COSH(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=TANH(1)",
+    "expected": 0.761594155955765
+  },
+  {
+    "formula": "=ASINH(1)",
+    "expected": 0.881373587019543
+  },
+  {
+    "formula": "=ACOSH(1)",
+    "expected": 0
+  },
+  {
+    "formula": "=ACOSH(10)",
+    "expected": 2.99322284612638
+  },
+  {
+    "formula": "=ACOSH(0.5)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=ATANH(0.5)",
+    "expected": 0.549306144334055
+  },
+  {
+    "formula": "=ATANH(1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=SINH(\"abc\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=MROUND(10,3)",
+    "expected": 9
+  },
+  {
+    "formula": "=MROUND(7.5,2)",
+    "expected": 8
+  },
+  {
+    "formula": "=MROUND(-10,-3)",
+    "expected": -9
+  },
+  {
+    "formula": "=MROUND(-10,3)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=MROUND(1.3,0.2)",
+    "expected": 1.4
+  },
+  {
+    "formula": "=MROUND(5,0)",
+    "expected": 0
+  },
+  {
+    "formula": "=SUMSQ(3,4)",
+    "expected": 25
+  },
+  {
+    "formula": "=SUMSQ(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 2
+    },
+    "expected": 9
+  },
+  {
+    "formula": "=SUMSQ(1,1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=BASE(255,16)",
+    "expected": "FF"
+  },
+  {
+    "formula": "=BASE(7,2)",
+    "expected": "111"
+  },
+  {
+    "formula": "=BASE(7,2,8)",
+    "expected": "00000111"
+  },
+  {
+    "formula": "=BASE(-1,2)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=DECIMAL(\"FF\",16)",
+    "expected": 255
+  },
+  {
+    "formula": "=DECIMAL(\"111\",2)",
+    "expected": 7
+  },
+  {
+    "formula": "=DECIMAL(\"zap\",36)",
+    "expected": 45745
+  },
+  {
+    "formula": "=DECIMAL(\"FF\",2)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=BITAND(13,25)",
+    "expected": 9
+  },
+  {
+    "formula": "=BITOR(13,25)",
+    "expected": 29
+  },
+  {
+    "formula": "=BITXOR(5,3)",
+    "expected": 6
+  },
+  {
+    "formula": "=BITLSHIFT(4,2)",
+    "expected": 16
+  },
+  {
+    "formula": "=BITLSHIFT(4,-1)",
+    "expected": 2
+  },
+  {
+    "formula": "=BITRSHIFT(13,2)",
+    "expected": 3
+  },
+  {
+    "formula": "=BITAND(-1,1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=BITAND(2.5,1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=DELTA(5,5)",
+    "expected": 1
+  },
+  {
+    "formula": "=DELTA(5,4)",
+    "expected": 0
+  },
+  {
+    "formula": "=DELTA(0)",
+    "expected": 1
+  },
+  {
+    "formula": "=GESTEP(5,4)",
+    "expected": 1
+  },
+  {
+    "formula": "=GESTEP(3,4)",
+    "expected": 0
+  },
+  {
+    "formula": "=GESTEP(4,4)",
+    "expected": 1
+  },
+  {
+    "formula": "=GESTEP(-1)",
+    "expected": 0
   }
 ]

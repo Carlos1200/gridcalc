@@ -29,9 +29,28 @@ function sampleVariance(args: RawInterpreterValue[]): number | CellError {
   if (numbers.length < 2) {
     return new CellError(CellErrorType.DIV_BY_ZERO, 'Needs at least two numbers');
   }
-  const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
-  const squares = numbers.reduce((a, b) => a + (b - mean) * (b - mean), 0);
-  return squares / (numbers.length - 1);
+  return squaredDeviations(numbers) / (numbers.length - 1);
+}
+
+/** Population variance (n denominator); no numbers -> #DIV/0!. */
+function populationVariance(args: RawInterpreterValue[]): number | CellError {
+  const numbers = collectNumbers(args);
+  if (numbers instanceof CellError) {
+    return numbers;
+  }
+  if (numbers.length === 0) {
+    return new CellError(CellErrorType.DIV_BY_ZERO, 'Needs at least one number');
+  }
+  return squaredDeviations(numbers) / numbers.length;
+}
+
+function mean(numbers: number[]): number {
+  return numbers.reduce((a, b) => a + b, 0) / numbers.length;
+}
+
+function squaredDeviations(numbers: number[]): number {
+  const m = mean(numbers);
+  return numbers.reduce((a, b) => a + (b - m) * (b - m), 0);
 }
 
 /** LARGE and SMALL differ only in sort direction. */
@@ -400,6 +419,97 @@ export const statisticalFunctions: RegisteredFunction[] = [
       }
       const beaten = numbers.filter((n) => (ascending ? n < value : n > value)).length;
       return beaten + 1;
+    },
+  },
+  {
+    metadata: { name: 'VARP', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => populationVariance(args),
+  },
+  {
+    metadata: { name: 'STDEVP', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const variance = populationVariance(args);
+      return variance instanceof CellError ? variance : Math.sqrt(variance);
+    },
+  },
+  {
+    // Mean absolute deviation from the mean.
+    metadata: { name: 'AVEDEV', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const numbers = collectNumbers(args);
+      if (numbers instanceof CellError) {
+        return numbers;
+      }
+      if (numbers.length === 0) {
+        return new CellError(CellErrorType.NUM, 'AVEDEV needs at least one number');
+      }
+      const m = mean(numbers);
+      return numbers.reduce((a, b) => a + Math.abs(b - m), 0) / numbers.length;
+    },
+  },
+  {
+    metadata: { name: 'DEVSQ', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const numbers = collectNumbers(args);
+      if (numbers instanceof CellError) {
+        return numbers;
+      }
+      if (numbers.length === 0) {
+        return new CellError(CellErrorType.NUM, 'DEVSQ needs at least one number');
+      }
+      return squaredDeviations(numbers);
+    },
+  },
+  {
+    // Geometric mean over the logs to dodge overflow; needs all-positive data.
+    metadata: { name: 'GEOMEAN', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const numbers = collectNumbers(args);
+      if (numbers instanceof CellError) {
+        return numbers;
+      }
+      if (numbers.length === 0 || numbers.some((n) => n <= 0)) {
+        return new CellError(CellErrorType.NUM, 'GEOMEAN needs positive numbers');
+      }
+      return Math.exp(numbers.reduce((a, b) => a + Math.log(b), 0) / numbers.length);
+    },
+  },
+  {
+    metadata: { name: 'HARMEAN', minArgs: 1, maxArgs: Infinity, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const numbers = collectNumbers(args);
+      if (numbers instanceof CellError) {
+        return numbers;
+      }
+      if (numbers.length === 0 || numbers.some((n) => n <= 0)) {
+        return new CellError(CellErrorType.NUM, 'HARMEAN needs positive numbers');
+      }
+      return numbers.length / numbers.reduce((a, b) => a + 1 / b, 0);
+    },
+  },
+  {
+    metadata: { name: 'PERMUT', minArgs: 2, maxArgs: 2 },
+    fn: (args: RawInterpreterValue[]) => {
+      const nNum = asNumber(args[0]!);
+      if (nNum instanceof CellError) {
+        return nNum;
+      }
+      const kNum = asNumber(args[1]!);
+      if (kNum instanceof CellError) {
+        return kNum;
+      }
+      const n = Math.trunc(nNum);
+      const k = Math.trunc(kNum);
+      if (n < 0 || k < 0 || n < k) {
+        return new CellError(CellErrorType.NUM, 'PERMUT needs 0 <= chosen <= number');
+      }
+      let result = 1;
+      for (let i = n - k + 1; i <= n; i++) {
+        result *= i;
+      }
+      return Number.isFinite(result)
+        ? result
+        : new CellError(CellErrorType.NUM, 'Numeric overflow');
     },
   },
   bestIfs('MAXIFS'),

@@ -406,6 +406,96 @@ export const datetimeFunctions: RegisteredFunction[] = [
     },
   },
   {
+    metadata: { name: 'YEARFRAC', minArgs: 2, maxArgs: 3 },
+    fn: (args: RawInterpreterValue[], context: EvaluationContext) => {
+      const aNum = asNumber(args[0]!);
+      if (aNum instanceof CellError) {
+        return aNum;
+      }
+      const bNum = asNumber(args[1]!);
+      if (bNum instanceof CellError) {
+        return bNum;
+      }
+      let basis = 0;
+      if (args[2] !== undefined) {
+        const basisNum = asNumber(args[2]);
+        if (basisNum instanceof CellError) {
+          return basisNum;
+        }
+        basis = Math.trunc(basisNum);
+      }
+      if (basis < 0 || basis > 4) {
+        return new CellError(CellErrorType.NUM, 'YEARFRAC basis must be between 0 and 4');
+      }
+      // Excel returns the positive fraction regardless of argument order.
+      const startSerial = Math.min(Math.floor(aNum), Math.floor(bNum));
+      const endSerial = Math.max(Math.floor(aNum), Math.floor(bNum));
+      if (startSerial < 0) {
+        return new CellError(CellErrorType.NUM, 'YEARFRAC serials cannot be negative');
+      }
+      const bug = context.config.use1900LeapYearBug;
+      const start = serialToDate(startSerial, bug);
+      const end = serialToDate(endSerial, bug);
+      if (basis === 0 || basis === 4) {
+        let startDay = start.day;
+        let endDay = end.day;
+        if (basis === 4) {
+          // European 30/360.
+          startDay = Math.min(startDay, 30);
+          endDay = Math.min(endDay, 30);
+        } else {
+          // US (NASD) 30/360.
+          if (startDay === 31) {
+            startDay = 30;
+          }
+          if (endDay === 31 && startDay === 30) {
+            endDay = 30;
+          }
+        }
+        const days =
+          (end.year - start.year) * 360 + (end.month - start.month) * 30 + (endDay - startDay);
+        return days / 360;
+      }
+      if (basis === 2) {
+        return (endSerial - startSerial) / 360;
+      }
+      if (basis === 3) {
+        return (endSerial - startSerial) / 365;
+      }
+      // Basis 1, actual/actual, with Excel's denominator rules.
+      const isLeap = (year: number): boolean =>
+        (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+      const spansOverOneYear =
+        end.year > start.year &&
+        !(
+          end.year === start.year + 1 &&
+          (end.month < start.month || (end.month === start.month && end.day <= start.day))
+        );
+      let denominator: number;
+      if (spansOverOneYear) {
+        // Average length of every calendar year touched.
+        const yearCount = end.year - start.year + 1;
+        denominator =
+          (dateToSerial({ year: end.year + 1, month: 1, day: 1 }, bug) -
+            dateToSerial({ year: start.year, month: 1, day: 1 }, bug)) /
+          yearCount;
+      } else if (start.year === end.year) {
+        denominator = isLeap(start.year) ? 366 : 365;
+      } else {
+        denominator = 365;
+        for (const year of [start.year, end.year]) {
+          if (isLeap(year)) {
+            const feb29 = dateToSerial({ year, month: 2, day: 29 }, bug);
+            if (startSerial <= feb29 && feb29 <= endSerial) {
+              denominator = 366;
+            }
+          }
+        }
+      }
+      return (endSerial - startSerial) / denominator;
+    },
+  },
+  {
     metadata: { name: 'DATEDIF', minArgs: 3, maxArgs: 3 },
     fn: (args: RawInterpreterValue[], context: EvaluationContext) => {
       const startNum = asNumber(args[0]!);

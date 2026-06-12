@@ -344,5 +344,81 @@
   {
     "formula": "=ARABIC(\"ABC\")",
     "expected": "#VALUE!"
-  }
+  },
+  "=SINH(1)",
+  "=COSH(0)",
+  "=TANH(1)",
+  "=ASINH(1)",
+  "=ACOSH(1)",
+  "=ACOSH(10)",
+  {
+    "formula": "=ACOSH(0.5)",
+    "expected": "#NUM!"
+  },
+  "=ATANH(0.5)",
+  {
+    "formula": "=ATANH(1)",
+    "expected": "#NUM!"
+  },
+  "=SINH(\"abc\")",
+  "=MROUND(10,3)",
+  "=MROUND(7.5,2)",
+  "=MROUND(-10,-3)",
+  {
+    "formula": "=MROUND(-10,3)",
+    "expected": "#NUM!"
+  },
+  "=MROUND(1.3,0.2)",
+  "=MROUND(5,0)",
+  "=SUMSQ(3,4)",
+  {
+    "formula": "=SUMSQ(A1:A3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 2
+    }
+  },
+  "=SUMSQ(1,1/0)",
+  "=BASE(255,16)",
+  {
+    "formula": "=BASE(7,2)",
+    "expected": "111"
+  },
+  {
+    "formula": "=BASE(7,2,8)",
+    "expected": "00000111"
+  },
+  {
+    "formula": "=BASE(-1,2)",
+    "expected": "#NUM!"
+  },
+  "=DECIMAL(\"FF\",16)",
+  "=DECIMAL(\"111\",2)",
+  "=DECIMAL(\"zap\",36)",
+  {
+    "formula": "=DECIMAL(\"FF\",2)",
+    "expected": "#NUM!"
+  },
+  "=BITAND(13,25)",
+  "=BITOR(13,25)",
+  "=BITXOR(5,3)",
+  "=BITLSHIFT(4,2)",
+  "=BITLSHIFT(4,-1)",
+  "=BITRSHIFT(13,2)",
+  {
+    "formula": "=BITAND(-1,1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=BITAND(2.5,1)",
+    "expected": "#NUM!"
+  },
+  "=DELTA(5,5)",
+  "=DELTA(5,4)",
+  "=DELTA(0)",
+  "=GESTEP(5,4)",
+  "=GESTEP(3,4)",
+  "=GESTEP(4,4)",
+  "=GESTEP(-1)"
 ]
