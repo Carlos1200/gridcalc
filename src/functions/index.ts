@@ -1,5 +1,6 @@
 import { FunctionRegistry } from './registry';
 import { datetimeFunctions } from './datetime';
+import { distributionFunctions } from './distributions';
 import { informationFunctions } from './information';
 import { logicalFunctions } from './logical';
 import { lookupFunctions } from './lookup';
@@ -13,6 +14,7 @@ export function buildDefaultRegistry(): FunctionRegistry {
   for (const entry of [
     ...mathFunctions,
     ...statisticalFunctions,
+    ...distributionFunctions,
     ...logicalFunctions,
     ...textFunctions,
     ...lookupFunctions,

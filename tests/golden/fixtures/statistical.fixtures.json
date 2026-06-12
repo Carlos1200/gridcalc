@@ -748,5 +748,320 @@
   {
     "formula": "=PERMUT(2,3)",
     "expected": "#NUM!"
+  },
+  {
+    "formula": "=CORREL(A1:A5,B1:B5)",
+    "inputs": {
+      "A1": 3,
+      "A2": 2,
+      "A3": 4,
+      "A4": 5,
+      "A5": 6,
+      "B1": 9,
+      "B2": 7,
+      "B3": 12,
+      "B4": 15,
+      "B5": 17
+    },
+    "expected": 0.997054485501582
+  },
+  {
+    "formula": "=CORREL(A1:A4,B1:B4)",
+    "inputs": {
+      "A1": 1,
+      "A2": "x",
+      "A3": 3,
+      "A4": 4,
+      "B1": 2,
+      "B2": 4,
+      "B3": 6,
+      "B4": 8
+    },
+    "expected": 1
+  },
+  {
+    "formula": "=CORREL(A1:A3,B1:B2)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 4,
+      "B2": 5
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=CORREL(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 5,
+      "A2": 5,
+      "A3": 5,
+      "B1": 1,
+      "B2": 2,
+      "B3": 3
+    },
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=CORREL(A1:A3,B1:B3)",
+    "inputs": {},
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=CORREL(1/0,1)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=COVAR(A1:A5,B1:B5)",
+    "inputs": {
+      "A1": 3,
+      "A2": 2,
+      "A3": 4,
+      "A4": 5,
+      "A5": 6,
+      "B1": 9,
+      "B2": 7,
+      "B3": 12,
+      "B4": 15,
+      "B5": 17
+    },
+    "expected": 5.2
+  },
+  {
+    "formula": "=COVAR(A1:A4,B1:B4)",
+    "inputs": {
+      "A1": 1,
+      "A2": "x",
+      "A3": 3,
+      "A4": 4,
+      "B1": 2,
+      "B2": 4,
+      "B3": 6,
+      "B4": 8
+    },
+    "expected": 3.11111111111111
+  },
+  {
+    "formula": "=COVAR(A1:A2,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "B1": 4,
+      "B2": 5,
+      "B3": 6
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=COVAR(5,7)",
+    "expected": 0
+  },
+  {
+    "formula": "=SLOPE(A1:A7,B1:B7)",
+    "inputs": {
+      "A1": 2,
+      "A2": 3,
+      "A3": 9,
+      "A4": 1,
+      "A5": 8,
+      "A6": 7,
+      "A7": 5,
+      "B1": 6,
+      "B2": 5,
+      "B3": 11,
+      "B4": 7,
+      "B5": 5,
+      "B6": 4,
+      "B7": 4
+    },
+    "expected": 0.305555555555556
+  },
+  {
+    "formula": "=SLOPE(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 7,
+      "B2": 7,
+      "B3": 7
+    },
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=SLOPE(A1:A3,B1:B2)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 4,
+      "B2": 5
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=INTERCEPT(A1:A5,B1:B5)",
+    "inputs": {
+      "A1": 2,
+      "A2": 3,
+      "A3": 9,
+      "A4": 1,
+      "A5": 8,
+      "B1": 6,
+      "B2": 5,
+      "B3": 11,
+      "B4": 7,
+      "B5": 5
+    },
+    "expected": 0.0483870967741928
+  },
+  {
+    "formula": "=INTERCEPT(A1:A3,B1:B3)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 7,
+      "B2": 7,
+      "B3": 7
+    },
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=FORECAST(30,A1:A5,B1:B5)",
+    "inputs": {
+      "A1": 6,
+      "A2": 7,
+      "A3": 9,
+      "A4": 15,
+      "A5": 21,
+      "B1": 20,
+      "B2": 28,
+      "B3": 31,
+      "B4": 38,
+      "B5": 40
+    },
+    "expected": 10.6072530864198
+  },
+  {
+    "formula": "=FORECAST(\"abc\",A1:A2,B1:B2)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "B1": 3,
+      "B2": 4
+    },
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FORECAST(5,A1:A3,B1:B2)",
+    "inputs": {
+      "A1": 1,
+      "A2": 2,
+      "A3": 3,
+      "B1": 4,
+      "B2": 5
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=NORMDIST(42,40,1.5,TRUE)",
+    "expected": 0.908788780274132
+  },
+  {
+    "formula": "=NORMDIST(42,40,1.5,FALSE)",
+    "expected": 0.109340049783996
+  },
+  {
+    "formula": "=NORMDIST(42,40,0,TRUE)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=NORMDIST(42,40,-1,TRUE)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=NORMDIST(\"x\",40,1.5,TRUE)",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=NORM.DIST(42,40,1.5,TRUE)",
+    "expected": 0.908788780274132
+  },
+  {
+    "formula": "=NORM.DIST(42,40,1.5,FALSE)",
+    "expected": 0.109340049783996
+  },
+  {
+    "formula": "=NORMSDIST(1.333333)",
+    "expected": 0.908788725604095
+  },
+  {
+    "formula": "=NORMSDIST(0)",
+    "expected": 0.5
+  },
+  {
+    "formula": "=NORMSDIST(-2.5)",
+    "expected": 0.00620966532577613
+  },
+  {
+    "formula": "=NORMSDIST(-8)",
+    "expected": 6.22096057427176e-16
+  },
+  {
+    "formula": "=NORMSDIST(1/0)",
+    "expected": "#DIV/0!"
+  },
+  {
+    "formula": "=NORM.S.DIST(1.333333,TRUE)",
+    "expected": 0.908788725604095
+  },
+  {
+    "formula": "=NORM.S.DIST(1.333333,FALSE)",
+    "expected": 0.164010147569367
+  },
+  {
+    "formula": "=NORMINV(0.908789,40,1.5)",
+    "expected": 42.0000020095662
+  },
+  {
+    "formula": "=NORMINV(0,40,1.5)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=NORMINV(1,40,1.5)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=NORMINV(0.5,40,-2)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=NORM.INV(0.908789,40,1.5)",
+    "expected": 42.0000020095662
+  },
+  {
+    "formula": "=NORMSINV(0.908789)",
+    "expected": 1.33333467304411
+  },
+  {
+    "formula": "=NORMSINV(0.5)",
+    "expected": 0
+  },
+  {
+    "formula": "=NORMSINV(0.0001)",
+    "expected": -3.71901648545568
+  },
+  {
+    "formula": "=NORMSINV(0.9999)",
+    "expected": 3.71901648545571
+  },
+  {
+    "formula": "=NORMSINV(1.1)",
+    "expected": "#NUM!"
+  },
+  {
+    "formula": "=NORM.S.INV(0.908789)",
+    "expected": 1.33333467304411
   }
 ]

@@ -116,7 +116,11 @@
   - datetime: YEARFRAC (las 5 bases: 30/360 US y europeo, actual/actual con reglas Excel de denominador — mismo año bisiesto → 366, multianual → media de los años tocados —, actual/360, actual/365; orden de args indiferente, devuelve positivo)
   - lookup: ADDRESS (abs 1-4, estilos A1 y R1C1, hoja opcional con quoting `''` — fijado a sintaxis Excel `Hoja!$C$2`, LO emite `Hoja.$C$2`)
   - ISFORMULA/FORMULATEXT/SHEET/SHEETS pendientes: necesitan ampliar `EvaluationContext` (saber si una celda tiene fórmula / su texto / contar hojas)
-- [ ] Siguiente expansión (opcional, ya por encima del objetivo): DOLLAR, TEXTBEFORE/TEXTAFTER/TEXTSPLIT (Excel 365 — revisar soporte LO para golden), COVAR/CORREL/SLOPE/INTERCEPT/FORECAST, NORMDIST y familia, ISFORMULA/FORMULATEXT/SHEET/SHEETS (con extensión del contexto), OFFSET/INDIRECT (Fase 3)
+- [x] Quinta tanda (expansión opcional, 2026-06-12): **176 funciones totales**, todas con golden y nombre es
+  - statistical (regresión): COVAR, CORREL, SLOPE, INTERCEPT, FORECAST — pares no numéricos se saltan posicionalmente, tamaños distintos → `#N/A` (LO da Err:502, `expected` manual), sin datos o varianza cero → `#DIV/0!` (CORREL con rangos vacíos: LO da `#VALUE!`, fijado a `#DIV/0!` Excel)
+  - distributions (`src/functions/distributions.ts`): NORM.DIST/NORMDIST, NORM.INV/NORMINV, NORM.S.DIST/NORMSDIST (la legacy es solo CDF), NORM.S.INV/NORMSINV — erf/erfc de Cody (SPECFUN) + inversa de Acklam con un paso de Halley; coincide con LO dentro de 1e-9 incluso en colas (`NORMSDIST(-8)`); sd ≤ 0 o p fuera de (0,1) → `#NUM!`
+  - Generador: grafías modernas vía `COM.MICROSOFT.NORM.*`; las legacy NORMSDIST/NORMSINV en ODF son `LEGACY.NORMS*`
+- [ ] Resto de la expansión opcional: DOLLAR, TEXTBEFORE/TEXTAFTER (TEXTSPLIT devuelve arrays → Fase 3), ISFORMULA/FORMULATEXT/SHEET/SHEETS (con extensión del contexto), OFFSET/INDIRECT (Fase 3)
 
 ## Fase 3 — Dynamic arrays ⬜ PENDIENTE
 

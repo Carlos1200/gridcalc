@@ -204,6 +204,76 @@ function forEachMultiMatch(
   return undefined;
 }
 
+/**
+ * Pairs up two equally-sized arrays the way CORREL/COVAR/SLOPE do: different
+ * number of data points -> #N/A, errors propagate, pairs where either side is
+ * not a real number are skipped (text/logicals/empties never coerce here).
+ */
+function collectPairs(
+  a: RawInterpreterValue,
+  b: RawInterpreterValue,
+): { xs: number[]; ys: number[] } | CellError {
+  const left = asMatrix(a).flat();
+  const right = asMatrix(b).flat();
+  if (left.length !== right.length) {
+    return new CellError(CellErrorType.NA, 'Arrays have a different number of data points');
+  }
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let i = 0; i < left.length; i++) {
+    const x = asScalar(left[i]!);
+    const y = asScalar(right[i]!);
+    if (x instanceof CellError) {
+      return x;
+    }
+    if (y instanceof CellError) {
+      return y;
+    }
+    if (typeof x === 'number' && typeof y === 'number') {
+      xs.push(x);
+      ys.push(y);
+    }
+  }
+  return { xs, ys };
+}
+
+/** Centered sums shared by CORREL/COVAR/SLOPE/INTERCEPT/FORECAST. */
+function centeredSums(xs: number[], ys: number[]): { sxx: number; syy: number; sxy: number; mx: number; my: number } {
+  const mx = mean(xs);
+  const my = mean(ys);
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  for (let i = 0; i < xs.length; i++) {
+    const dx = xs[i]! - mx;
+    const dy = ys[i]! - my;
+    sxx += dx * dx;
+    syy += dy * dy;
+    sxy += dx * dy;
+  }
+  return { sxx, syy, sxy, mx, my };
+}
+
+/** Least-squares line over (known_ys, known_xs) args; #DIV/0! when x is constant. */
+function linearFit(
+  knownYs: RawInterpreterValue,
+  knownXs: RawInterpreterValue,
+): { slope: number; intercept: number } | CellError {
+  const pairs = collectPairs(knownXs, knownYs);
+  if (pairs instanceof CellError) {
+    return pairs;
+  }
+  if (pairs.xs.length === 0) {
+    return new CellError(CellErrorType.DIV_BY_ZERO, 'No numeric data points');
+  }
+  const { sxx, sxy, mx, my } = centeredSums(pairs.xs, pairs.ys);
+  if (sxx === 0) {
+    return new CellError(CellErrorType.DIV_BY_ZERO, 'known_xs are all equal');
+  }
+  const slope = sxy / sxx;
+  return { slope, intercept: my - slope * mx };
+}
+
 /** Sums and counts the numeric matched cells; shared by SUMIFS-style outputs. */
 function sumMatchedCell(
   valueRange: RawInterpreterValue[][],
@@ -573,6 +643,62 @@ export const statisticalFunctions: RegisteredFunction[] = [
         return error;
       }
       return acc.count === 0 ? new CellError(CellErrorType.DIV_BY_ZERO) : acc.total / acc.count;
+    },
+  },
+  {
+    // Legacy population covariance (modern COVARIANCE.P/.S can alias it later).
+    metadata: { name: 'COVAR', minArgs: 2, maxArgs: 2, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const pairs = collectPairs(args[0]!, args[1]!);
+      if (pairs instanceof CellError) {
+        return pairs;
+      }
+      if (pairs.xs.length === 0) {
+        return new CellError(CellErrorType.DIV_BY_ZERO, 'No numeric data points');
+      }
+      return centeredSums(pairs.xs, pairs.ys).sxy / pairs.xs.length;
+    },
+  },
+  {
+    metadata: { name: 'CORREL', minArgs: 2, maxArgs: 2, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const pairs = collectPairs(args[0]!, args[1]!);
+      if (pairs instanceof CellError) {
+        return pairs;
+      }
+      if (pairs.xs.length === 0) {
+        return new CellError(CellErrorType.DIV_BY_ZERO, 'No numeric data points');
+      }
+      const { sxx, syy, sxy } = centeredSums(pairs.xs, pairs.ys);
+      if (sxx === 0 || syy === 0) {
+        return new CellError(CellErrorType.DIV_BY_ZERO, 'An array has zero variance');
+      }
+      return sxy / Math.sqrt(sxx * syy);
+    },
+  },
+  {
+    metadata: { name: 'SLOPE', minArgs: 2, maxArgs: 2, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const fit = linearFit(args[0]!, args[1]!);
+      return fit instanceof CellError ? fit : fit.slope;
+    },
+  },
+  {
+    metadata: { name: 'INTERCEPT', minArgs: 2, maxArgs: 2, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const fit = linearFit(args[0]!, args[1]!);
+      return fit instanceof CellError ? fit : fit.intercept;
+    },
+  },
+  {
+    metadata: { name: 'FORECAST', minArgs: 3, maxArgs: 3, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const x = asNumber(args[0]!);
+      if (x instanceof CellError) {
+        return x;
+      }
+      const fit = linearFit(args[1]!, args[2]!);
+      return fit instanceof CellError ? fit : fit.intercept + fit.slope * x;
     },
   },
 ];
