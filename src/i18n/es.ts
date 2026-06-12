@@ -11,10 +11,12 @@ export const ES_BOOLEAN_LITERALS: Readonly<Record<'TRUE' | 'FALSE', string>> = {
  * (engine-specific ones like #CIRCULAR!) keep their canonical spelling.
  */
 export const ES_ERROR_LITERALS: ReadonlyArray<readonly [string, CellErrorType]> = [
+  ['#¡DESBORDAMIENTO!', CellErrorType.SPILL],
   ['#¿NOMBRE?', CellErrorType.NAME],
   ['#¡DIV/0!', CellErrorType.DIV_BY_ZERO],
   ['#¡VALOR!', CellErrorType.VALUE],
   ['#¡NULO!', CellErrorType.NULL],
+  ['#¡CALC!', CellErrorType.CALC],
   ['#¡NUM!', CellErrorType.NUM],
   ['#¡REF!', CellErrorType.REF],
   ['#N/D', CellErrorType.NA],

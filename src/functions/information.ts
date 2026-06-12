@@ -42,6 +42,7 @@ const ERROR_TYPE_CODES: Partial<Record<CellErrorType, number>> = {
   [CellErrorType.NUM]: 6,
   [CellErrorType.NA]: 7,
   [CellErrorType.SPILL]: 9,
+  [CellErrorType.CALC]: 14,
 };
 
 export const informationFunctions: RegisteredFunction[] = [

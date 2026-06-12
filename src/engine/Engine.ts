@@ -37,8 +37,16 @@ export interface ChangedCell {
 
 type Cell =
   | { kind: 'value'; value: ScalarValue }
-  /** `value` is null until the first evaluation. */
-  | { kind: 'formula'; formula: string; ast: Ast; value: ScalarValue | null };
+  /**
+   * `value` is null until the first evaluation. `spill` is the footprint
+   * (anchor included) of the array the formula last spilled, if any.
+   */
+  | { kind: 'formula'; formula: string; ast: Ast; value: ScalarValue | null; spill?: SimpleCellRange }
+  /** A cell covered by another formula's spilled array. */
+  | { kind: 'spill'; anchor: SimpleCellAddress; value: ScalarValue };
+
+/** Safety cap on spill-settling passes (shapes oscillating pathologically). */
+const MAX_SPILL_PASSES = 32;
 
 /**
  * Named expressions live as virtual cells on this reserved sheet id
@@ -72,6 +80,14 @@ export class Engine {
   private readonly nameIds = new Map<string, { id: number; display: string }>();
   /** Set while inside batch(): accumulates work instead of recalculating. */
   private pending: { seeds: SimpleCellAddress[]; direct: ChangedCell[] } | undefined;
+  /** Blocked (#SPILL!) anchors watch their desired footprint, outside the
+   *  graph so the watch edges cannot fabricate #CIRCULAR! cycles. */
+  private readonly watchedByAnchor = new Map<string, Set<string>>();
+  private readonly anchorsWatching = new Map<string, Set<string>>();
+  /** Anchors whose shadows the user overwrote/cleared; drained by recalculate. */
+  private spillDisturbances: SimpleCellAddress[] = [];
+  /** Shadow cells cleared inside applyContent; drained by recalculate. */
+  private spillCleared: ChangedCell[] = [];
 
   private constructor(config?: Partial<EngineConfig>) {
     this.config = buildConfig(config);
@@ -250,6 +266,10 @@ export class Engine {
     if (cell.kind === 'value') {
       return this.setCellContents(target, cell.value);
     }
+    if (cell.kind === 'spill') {
+      // Copying a spilled cell pastes its value, like Excel.
+      return this.setCellContents(target, cell.value);
+    }
     if (cell.ast.type === 'PARSE_ERROR') {
       // Nothing to adjust in a formula that never parsed; copy it verbatim.
       return this.setCellContents(target, cell.formula);
@@ -278,6 +298,17 @@ export class Engine {
   private applyContent(address: SimpleCellAddress, content: RawCellContent): ChangedCell | undefined {
     const key = cellAddressKey(address);
     const previous = this.cells.get(key);
+
+    if (previous?.kind === 'spill') {
+      // Editing a spilled cell: the user content wins; the anchor re-evaluates
+      // (and collides into #SPILL!, or re-spills if the cell was cleared).
+      this.spillDisturbances.push(previous.anchor);
+      this.graph.removeFormula(address); // drop the shadow's pseudo-node
+    }
+    if (previous?.kind === 'formula' && previous.spill) {
+      // Replacing or clearing an anchor retracts everything it spilled.
+      this.clearShadows(address, previous.spill, this.spillCleared);
+    }
 
     if (content === null || content === '') {
       if (!previous) {
@@ -323,35 +354,252 @@ export class Engine {
   }
 
   private recalculate(seeds: SimpleCellAddress[]): ChangedCell[] {
-    const plan = this.graph.getRecalculationPlan(seeds);
-    const changes: ChangedCell[] = [];
+    const changes: ChangedCell[] = [...this.spillCleared];
+    let pending: SimpleCellAddress[] = [
+      ...seeds,
+      ...this.spillCleared.map((change) => change.address),
+      ...this.spillDisturbances,
+    ];
+    this.spillCleared = [];
+    this.spillDisturbances = [];
 
-    // Cycle members first, so their dependents (later in plan.order) read
-    // #CIRCULAR! as a regular error value and propagate it.
-    for (const address of plan.cyclic) {
-      const cell = this.cells.get(cellAddressKey(address));
-      if (cell?.kind !== 'formula') {
-        continue;
+    // Spilling writes cells the plan could not know about, so settle in
+    // passes: each pass replans from the cells the previous one (un)covered.
+    for (let pass = 0; pass === 0 || (pending.length > 0 && pass < MAX_SPILL_PASSES); pass++) {
+      const plan = this.graph.getRecalculationPlan(this.expandWatchers(pending), pass === 0);
+      pending = [];
+
+      // Cycle members first, so their dependents (later in plan.order) read
+      // #CIRCULAR! as a regular error value and propagate it.
+      for (const address of plan.cyclic) {
+        const cell = this.cells.get(cellAddressKey(address));
+        if (cell?.kind !== 'formula') {
+          continue;
+        }
+        const error = new CellError(CellErrorType.CIRCULAR, 'Circular reference');
+        this.retractSpill(address, cell, changes, pending);
+        if (!valuesEqual(cell.value, error)) {
+          cell.value = error;
+          changes.push({ address, value: error });
+        }
       }
-      const error = new CellError(CellErrorType.CIRCULAR, 'Circular reference');
-      if (!valuesEqual(cell.value, error)) {
-        cell.value = error;
-        changes.push({ address, value: error });
+
+      for (const address of plan.order) {
+        const cell = this.cells.get(cellAddressKey(address));
+        if (cell?.kind !== 'formula') {
+          continue; // plain values and spill shadows have nothing to compute
+        }
+        const raw = evaluateAst(cell.ast, this.contextFor(address));
+        const value = this.settleResult(address, cell, raw, changes, pending);
+        if (!valuesEqual(cell.value, value)) {
+          cell.value = value;
+          changes.push({ address, value });
+        }
       }
     }
+    return mergeChanges([], changes);
+  }
 
-    for (const address of plan.order) {
-      const cell = this.cells.get(cellAddressKey(address));
-      if (cell?.kind !== 'formula') {
-        continue;
-      }
-      const value = materialize(evaluateAst(cell.ast, this.contextFor(address)));
-      if (!valuesEqual(cell.value, value)) {
-        cell.value = value;
-        changes.push({ address, value });
+  /** Blocked anchors watching any of the edited cells re-evaluate too. */
+  private expandWatchers(seeds: SimpleCellAddress[]): SimpleCellAddress[] {
+    if (this.anchorsWatching.size === 0) {
+      return seeds;
+    }
+    const expanded = [...seeds];
+    for (const seed of seeds) {
+      const watchers = this.anchorsWatching.get(cellAddressKey(seed));
+      if (watchers) {
+        for (const anchorKey of watchers) {
+          expanded.push(cellAddressFromKey(anchorKey));
+        }
       }
     }
-    return changes;
+    return expanded;
+  }
+
+  /**
+   * Turns a raw evaluation result into the anchor cell's value, spilling
+   * array results into the neighbouring cells (or #SPILL! on collision).
+   * Newly covered/uncovered cells are appended to `pending` so the next
+   * settling pass replans their dependents.
+   */
+  private settleResult(
+    address: SimpleCellAddress,
+    cell: Cell & { kind: 'formula' },
+    raw: RawInterpreterValue,
+    changes: ChangedCell[],
+    pending: SimpleCellAddress[],
+  ): ScalarValue {
+    if (Array.isArray(raw) && address.sheet === NAMES_SHEET) {
+      // Names have no grid to spill into; they keep the top-left value.
+      return materialize(raw[0]?.[0] ?? EmptyValue);
+    }
+    if (!Array.isArray(raw)) {
+      this.retractSpill(address, cell, changes, pending);
+      this.setWatches(address, undefined);
+      return materialize(raw);
+    }
+    const rows = raw.length;
+    const cols = raw[0]?.length ?? 0;
+    if (rows === 0 || cols === 0) {
+      this.retractSpill(address, cell, changes, pending);
+      this.setWatches(address, undefined);
+      return new CellError(CellErrorType.CALC, 'Empty array result');
+    }
+    if (rows === 1 && cols === 1) {
+      this.retractSpill(address, cell, changes, pending);
+      this.setWatches(address, undefined);
+      return materialize(raw[0]![0]!);
+    }
+
+    const footprint: SimpleCellRange = {
+      start: address,
+      end: { sheet: address.sheet, col: address.col + cols - 1, row: address.row + rows - 1 },
+    };
+    const anchorKey = cellAddressKey(address);
+    const blockers = new Set<string>();
+    this.forEachInRange(footprint, (target, key) => {
+      if (key === anchorKey) {
+        return;
+      }
+      const existing = this.cells.get(key);
+      if (existing && !(existing.kind === 'spill' && cellAddressKey(existing.anchor) === anchorKey)) {
+        blockers.add(key);
+      }
+    });
+    if (blockers.size > 0) {
+      this.retractSpill(address, cell, changes, pending);
+      // Watch the whole desired footprint: clearing any blocker (or shrinking
+      // another spill over it) must re-trigger this anchor.
+      const watched = new Set<string>();
+      this.forEachInRange(footprint, (target, key) => {
+        if (key !== anchorKey) {
+          watched.add(key);
+        }
+      });
+      this.setWatches(address, watched);
+      return new CellError(CellErrorType.SPILL, 'Spill range is blocked');
+    }
+
+    this.setWatches(address, undefined);
+    const previous = cell.spill;
+    this.forEachInRange(footprint, (target, key) => {
+      if (key === anchorKey) {
+        return;
+      }
+      // Elements of a 2D result are always scalars (no nested arrays).
+      const value = materialize(
+        raw[target.row - address.row]![target.col - address.col] as RawScalarValue,
+      );
+      const existing = this.cells.get(key);
+      if (existing?.kind === 'spill') {
+        if (!valuesEqual(existing.value, value)) {
+          existing.value = value;
+          changes.push({ address: target, value });
+        }
+      } else {
+        this.cells.set(key, { kind: 'spill', anchor: address, value });
+        // Shadows are graph pseudo-formulas depending on their anchor, so a
+        // single plan orders anchor -> shadow -> readers of the shadow.
+        this.graph.setFormula(target, { cells: [address], ranges: [], names: [], volatile: false });
+        changes.push({ address: target, value });
+        pending.push(target); // its readers were not in this pass's plan
+      }
+    });
+    if (previous) {
+      this.forEachInRange(previous, (target, key) => {
+        if (key === anchorKey || withinRange(target, footprint)) {
+          return;
+        }
+        const existing = this.cells.get(key);
+        if (existing?.kind === 'spill' && cellAddressKey(existing.anchor) === anchorKey) {
+          this.cells.delete(key);
+          this.graph.removeFormula(target);
+          changes.push({ address: target, value: null });
+          pending.push(target);
+        }
+      });
+    }
+    cell.spill = footprint;
+    return materialize(raw[0]![0]!);
+  }
+
+  /** Clears everything the anchor spilled (formula now scalar/blocked/cyclic). */
+  private retractSpill(
+    address: SimpleCellAddress,
+    cell: Cell & { kind: 'formula' },
+    changes: ChangedCell[],
+    pending: SimpleCellAddress[],
+  ): void {
+    if (!cell.spill) {
+      return;
+    }
+    const cleared: ChangedCell[] = [];
+    this.clearShadows(address, cell.spill, cleared);
+    for (const change of cleared) {
+      changes.push(change);
+      pending.push(change.address);
+    }
+    delete cell.spill;
+  }
+
+  /** Deletes the anchor's shadow cells in `footprint`, reporting null changes. */
+  private clearShadows(
+    anchor: SimpleCellAddress,
+    footprint: SimpleCellRange,
+    cleared: ChangedCell[],
+  ): void {
+    const anchorKey = cellAddressKey(anchor);
+    this.forEachInRange(footprint, (target, key) => {
+      if (key === anchorKey) {
+        return;
+      }
+      const existing = this.cells.get(key);
+      if (existing?.kind === 'spill' && cellAddressKey(existing.anchor) === anchorKey) {
+        this.cells.delete(key);
+        this.graph.removeFormula(target);
+        cleared.push({ address: target, value: null });
+      }
+    });
+  }
+
+  /** Registers (or clears, with undefined) the cells a blocked anchor watches. */
+  private setWatches(anchor: SimpleCellAddress, watched: Set<string> | undefined): void {
+    const anchorKey = cellAddressKey(anchor);
+    const previous = this.watchedByAnchor.get(anchorKey);
+    if (previous) {
+      for (const key of previous) {
+        const watchers = this.anchorsWatching.get(key);
+        watchers?.delete(anchorKey);
+        if (watchers?.size === 0) {
+          this.anchorsWatching.delete(key);
+        }
+      }
+      this.watchedByAnchor.delete(anchorKey);
+    }
+    if (watched && watched.size > 0) {
+      this.watchedByAnchor.set(anchorKey, watched);
+      for (const key of watched) {
+        let watchers = this.anchorsWatching.get(key);
+        if (!watchers) {
+          watchers = new Set();
+          this.anchorsWatching.set(key, watchers);
+        }
+        watchers.add(anchorKey);
+      }
+    }
+  }
+
+  private forEachInRange(
+    range: SimpleCellRange,
+    visit: (address: SimpleCellAddress, key: string) => void,
+  ): void {
+    for (let row = range.start.row; row <= range.end.row; row++) {
+      for (let col = range.start.col; col <= range.end.col; col++) {
+        const address = { sheet: range.start.sheet, col, row };
+        visit(address, cellAddressKey(address));
+      }
+    }
   }
 
   private contextFor(address: SimpleCellAddress): EvaluationContext {
@@ -453,6 +701,16 @@ function materialize(value: RawInterpreterValue): ScalarValue {
     return 0;
   }
   return value;
+}
+
+function withinRange(address: SimpleCellAddress, range: SimpleCellRange): boolean {
+  return (
+    address.sheet === range.start.sheet &&
+    address.col >= range.start.col &&
+    address.col <= range.end.col &&
+    address.row >= range.start.row &&
+    address.row <= range.end.row
+  );
 }
 
 function valuesEqual(a: ScalarValue | null, b: ScalarValue | null): boolean {

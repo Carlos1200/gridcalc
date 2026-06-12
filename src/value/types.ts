@@ -12,6 +12,7 @@ export enum CellErrorType {
   NA = 'NA', // #N/A
   NULL = 'NULL', // #NULL!
   SPILL = 'SPILL', // #SPILL! (phase 3)
+  CALC = 'CALC', // #CALC! (empty array results, phase 3)
   CIRCULAR = 'CIRCULAR', // circular reference
   /** Syntax error in a stored formula (#ERROR!, same convention as HyperFormula). */
   ERROR = 'ERROR',
@@ -26,6 +27,7 @@ const ERROR_DISPLAY: Record<CellErrorType, string> = {
   [CellErrorType.NA]: '#N/A',
   [CellErrorType.NULL]: '#NULL!',
   [CellErrorType.SPILL]: '#SPILL!',
+  [CellErrorType.CALC]: '#CALC!',
   [CellErrorType.CIRCULAR]: '#CIRCULAR!',
   [CellErrorType.ERROR]: '#ERROR!',
 };

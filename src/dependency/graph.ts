@@ -111,10 +111,11 @@ export class DependencyGraph {
 
   /**
    * Computes which cells must be recalculated after `changed` cells were
-   * edited, and in what order. Volatile formulas are always included.
+   * edited, and in what order. Volatile formulas are included by default;
+   * spill-settling passes skip them so RAND() is not re-rolled per pass.
    */
-  getRecalculationPlan(changed: SimpleCellAddress[]): RecalculationPlan {
-    const dirty = this.collectDirty(changed);
+  getRecalculationPlan(changed: SimpleCellAddress[], includeVolatiles = true): RecalculationPlan {
+    const dirty = this.collectDirty(changed, includeVolatiles);
     const sccs = this.stronglyConnectedComponents(dirty);
 
     const order: SimpleCellAddress[] = [];
@@ -151,7 +152,7 @@ export class DependencyGraph {
   }
 
   /** Changed cells + volatile formulas + transitive dependents of both. */
-  private collectDirty(changed: SimpleCellAddress[]): Set<string> {
+  private collectDirty(changed: SimpleCellAddress[], includeVolatiles: boolean): Set<string> {
     const dirty = new Set<string>();
     const queue: string[] = [];
     const seed = (key: string): void => {
@@ -164,8 +165,10 @@ export class DependencyGraph {
     for (const addr of changed) {
       seed(cellAddressKey(addr));
     }
-    for (const key of this.volatileCells) {
-      seed(key);
+    if (includeVolatiles) {
+      for (const key of this.volatileCells) {
+        seed(key);
+      }
     }
     for (let i = 0; i < queue.length; i++) {
       const dependents = this.dependents.get(queue[i]!);

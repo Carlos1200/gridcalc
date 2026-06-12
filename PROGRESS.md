@@ -130,7 +130,11 @@
 ## Fase 3 — Dynamic arrays 🔶 EN CURSO
 
 - [x] Broadcasting (2026-06-12): operadores binarios/unarios y funciones escalares (no range-aware) se aplican elemento a elemento sobre args array (`liftOverArrays` en el intérprete). Reglas Excel: fila/columna/1x1 se estiran, posiciones sin pareja en formas >1 incompatibles → `#N/A` por elemento; errores escalares de nivel superior propagan antes del lifting; `+` unario sigue siendo no-op (también sobre arrays). Reemplaza el "rango en contexto escalar → `#VALUE!`" de Fase 1. Divergencia LO: no difunde rangos fuera de modo matriz (`=SUM(A1:A2+1)` → `#VALUE!`), fijado a Excel (7)
-- [ ] Spilling, `#SPILL!`, arrays como valores
+- [x] Spilling, `#SPILL!`, arrays como valores (2026-06-12) — ✅ criterio de fase cumplido (derrame actualiza adyacentes; colisión → `#SPILL!` con recuperación al liberar)
+  - El ancla guarda su huella (`spill`); las celdas derramadas son `kind: 'spill'` (valor + puntero al ancla) y **pseudo-fórmulas del grafo** que dependen del ancla → un solo plan ordena ancla → sombra → lectores. Resultados 1x1 son escalares; array vacío → `#CALC!` (nuevo `CellErrorType.CALC`, ERROR.TYPE 14, es `#¡CALC!`; `#SPILL!` es `#¡DESBORDAMIENTO!`)
+  - Colisión: ancla → `#SPILL!` y **vigila su huella deseada fuera del grafo** (sin falsos `#CIRCULAR!`); editar/limpiar una celda vigilada re-dispara el ancla. Escribir sobre una celda derramada gana el usuario (el ancla pasa a `#SPILL!` y retrae el resto); borrar/reemplazar el ancla retrae sus sombras
+  - `recalculate` itera a punto fijo (cap 32 pasadas): cada pasada re-planifica desde las celdas (des)cubiertas; las volátiles solo se siembran en la pasada inicial (RAND no se re-tira por pasada). Ancla que lee su propia huella → `#CIRCULAR!` real vía el grafo
+  - Nombres no derraman (sin grid): se quedan el valor superior-izquierdo. `copyCell` de celda derramada pega el valor
 - [x] Array literals `{1,2;3,4}` (2026-06-12): constantes de array con solo literales escalares (números con `-` opcional, texto, booleanos, errores), filas rectangulares o PARSE_ERROR. Separador de columna `,` (en) o `\` (es, `{1\2,5;3\4}`); filas siempre `;` (token `ARRAY_ROW_SEP` cuando `;` no es separador de argumentos). El serializador emite la grafía del locale; el generador traduce a ODF (`{1;2|3;4}`). Divergencia LO: rechaza booleanos en constantes (Err:539), fijado a Excel
 - [ ] Whitespace como operador de intersección
 - [ ] FILTER, SORT, SORTBY, UNIQUE, SEQUENCE, XLOOKUP, XMATCH
