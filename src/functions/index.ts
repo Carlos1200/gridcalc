@@ -2,6 +2,7 @@ import { FunctionRegistry } from './registry';
 import { arrayFunctions } from './arrays';
 import { datetimeFunctions } from './datetime';
 import { distributionFunctions } from './distributions';
+import { financialFunctions } from './financial';
 import { informationFunctions } from './information';
 import { logicalFunctions } from './logical';
 import { lookupFunctions } from './lookup';
@@ -17,6 +18,7 @@ export function buildDefaultRegistry(): FunctionRegistry {
     ...statisticalFunctions,
     ...distributionFunctions,
     ...arrayFunctions,
+    ...financialFunctions,
     ...logicalFunctions,
     ...textFunctions,
     ...lookupFunctions,

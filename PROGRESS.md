@@ -147,10 +147,11 @@
   - Integración: FILTER remodela su derrame al editar datos (crecer, encoger a `#CALC!` limpiando sombras), XLOOKUP derrama la fila, SORT re-ordena en vivo
 - [x] Volátiles bien integradas en el ciclo de recálculo (2026-06-12): `FunctionRegistry` mantiene el set de nombres con `volatile: true` y `extractDependencies` lo recibe como parámetro extra (el set estático `VOLATILE_FUNCTIONS` sigue cubriendo nombres aún no implementados como OFFSET/INDIRECT). Funciones custom registradas como volátiles se re-evalúan en cada edición (test incluido); cierra el pendiente de Fase 1
 
-## Fase 4 — Producto ⬜ PENDIENTE
+## Fase 4 — Producto 🔶 EN CURSO
 
 - [ ] `toJSON`/`fromJSON`, undo/redo
-- [ ] Funciones financieras (PMT, FV, PV, NPV, IRR...)
+- [x] Funciones financieras (2026-06-12): **207 funciones totales** — PMT/FV/PV/NPER/RATE/IPMT/PPMT (familia TVM sobre `PV·(1+r)^n + PMT·(1+r·type)·((1+r)^n−1)/r + FV = 0`; RATE por Newton con `expm1`/`log1p` para no perder precisión con raíces ~0), NPV/IRR/MIRR (IRR Newton con derivada analítica; sin flujo de cada signo → `#NUM!`), SLN/SYD/DB/DDB (DB con tasa redondeada a 3 decimales y primer/último año parcial por `month`; DDB con tope para no bajar del valor residual). Todas con golden y nombre es (PAGO, VF, VA, NPER, TASA, PAGOINT, PAGOPRIN, VNA, TIR, TIRM...)
+  - Divergencias LO fijadas a Excel: RATE/IRR/MIRR salen del CSV formateados como `%` (expected numérico manual), `NPV(-1,...)` → `#DIV/0!` (LO `#NUM!`), `SYD` con periodo > vida → `#NUM!` (LO devuelve 0), `IPMT` con periodo 0 → `#NUM!` (LO Err:502)
 - [ ] Benchmarks y optimización (objetivo: recálculo parcial sub-100ms en ~100k+ celdas)
 - [ ] Mejorar `numberToText` a fidelidad de formato General de Excel
 
