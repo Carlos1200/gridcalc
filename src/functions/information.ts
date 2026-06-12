@@ -7,8 +7,10 @@
  */
 
 import type { Ast } from '../ast/nodes';
+import type { EvaluationContext } from '../evaluator/context';
+import { evaluateAst } from '../evaluator/interpreter';
 import { CellError, CellErrorType, EmptyValue, type RawInterpreterValue } from '../value/types';
-import { asNumber } from './helpers';
+import { asNumber, asScalar, referencedAddress } from './helpers';
 import type { RegisteredFunction } from './types';
 
 function inspector(name: string, test: (value: RawInterpreterValue) => boolean): RegisteredFunction {
@@ -124,6 +126,58 @@ export const informationFunctions: RegisteredFunction[] = [
         ERROR_TYPE_CODES[value.type] ??
         new CellError(CellErrorType.NA, `No ERROR.TYPE code for ${value.type}`)
       );
+    },
+  },
+  {
+    // Lazy: asks whether the referenced cell HOLDS a formula, not its value.
+    metadata: { name: 'ISFORMULA', minArgs: 1, maxArgs: 1, argHandling: 'lazy' },
+    fn: (args: Ast[], context: EvaluationContext) => {
+      const address = referencedAddress(args[0]!, context.formulaAddress);
+      if (!address) {
+        return new CellError(CellErrorType.VALUE, 'ISFORMULA needs a reference');
+      }
+      return context.getCellFormula(address) !== undefined;
+    },
+  },
+  {
+    // Volatile: SHEET()/SHEET("name") have no graph edge to sheet changes.
+    metadata: { name: 'SHEET', minArgs: 0, maxArgs: 1, argHandling: 'lazy', volatile: true },
+    fn: (args: Ast[], context: EvaluationContext) => {
+      const target = args[0];
+      if (target === undefined) {
+        return context.sheetPosition(context.formulaAddress.sheet)!;
+      }
+      const address = referencedAddress(target, context.formulaAddress);
+      if (address) {
+        return (
+          context.sheetPosition(address.sheet) ??
+          new CellError(CellErrorType.NA, 'Reference to a removed sheet')
+        );
+      }
+      const value = asScalar(evaluateAst(target, context));
+      if (value instanceof CellError) {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return (
+          context.sheetPositionByName(value) ??
+          new CellError(CellErrorType.NA, `Unknown sheet "${value}"`)
+        );
+      }
+      return new CellError(CellErrorType.VALUE, 'SHEET needs a reference or a sheet name');
+    },
+  },
+  {
+    // Volatile for the same reason; a reference always spans 1 sheet here (no 3D ranges).
+    metadata: { name: 'SHEETS', minArgs: 0, maxArgs: 1, argHandling: 'lazy', volatile: true },
+    fn: (args: Ast[], context: EvaluationContext) => {
+      const target = args[0];
+      if (target === undefined) {
+        return context.countSheets();
+      }
+      return referencedAddress(target, context.formulaAddress)
+        ? 1
+        : new CellError(CellErrorType.REF, 'SHEETS needs a reference');
     },
   },
 ];

@@ -107,6 +107,11 @@ export class Engine {
       throw new Error(`Sheet "${sheetName}" already exists`);
     }
     this.sheets.push(sheetName);
+    // Volatile formulas (SHEETS()...) must see the new sheet right away; the
+    // resulting ChangedCells are dropped to keep the historical signature.
+    if (!this.pending) {
+      this.recalculate([]);
+    }
     return this.sheets.length - 1;
   }
 
@@ -364,7 +369,28 @@ export class Engine {
         const cell = this.cells.get(cellAddressKey({ sheet: NAMES_SHEET, col: 0, row: entry.id }));
         return cell ? (cell.value ?? EmptyValue) : undefined;
       },
+      getCellFormula: (addr) => this.getCellFormula(addr),
+      sheetPosition: (sheetId) => this.sheetPosition(sheetId),
+      sheetPositionByName: (name) => {
+        const id = this.getSheetId(name);
+        return id === undefined ? undefined : this.sheetPosition(id);
+      },
+      countSheets: () => this.getSheetNames().length,
     };
+  }
+
+  /** 1-based position among live sheets (removed slots don't count). */
+  private sheetPosition(sheetId: number): number | undefined {
+    if (this.sheets[sheetId] === undefined) {
+      return undefined;
+    }
+    let position = 0;
+    for (let id = 0; id <= sheetId; id++) {
+      if (this.sheets[id] !== undefined) {
+        position++;
+      }
+    }
+    return position;
   }
 
   private rawCellValue(address: SimpleCellAddress): RawScalarValue {

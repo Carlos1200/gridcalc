@@ -36,6 +36,10 @@ function makeContext(
     config: DEFAULT_CONFIG,
     functions,
     getNamedExpressionValue: () => undefined,
+    getCellFormula: () => undefined,
+    sheetPosition: (sheetId) => (sheetId === 0 ? 1 : undefined),
+    sheetPositionByName: (name) => (name.toLowerCase() === 'sheet1' ? 1 : undefined),
+    countSheets: () => 1,
     getCellValue: (addr) => valueAt(addr.col, addr.row),
     getRangeValues: (range) => {
       const rows: RawScalarValue[][] = [];

@@ -179,6 +179,7 @@ export const ES_FUNCTION_NAMES: Readonly<Record<string, string>> = {
   ROWS: 'FILAS',
   COLUMNS: 'COLUMNAS',
   ADDRESS: 'DIRECCION',
+  FORMULATEXT: 'FORMULATEXTO',
   // information
   ISBLANK: 'ESBLANCO',
   ISNUMBER: 'ESNUMERO',
@@ -196,6 +197,9 @@ export const ES_FUNCTION_NAMES: Readonly<Record<string, string>> = {
   'ERROR.TYPE': 'TIPO.DE.ERROR',
   TYPE: 'TIPO',
   ISREF: 'ESREF',
+  ISFORMULA: 'ESFORMULA',
+  SHEET: 'HOJA',
+  SHEETS: 'HOJAS',
   // datetime
   TODAY: 'HOY',
   NOW: 'AHORA',

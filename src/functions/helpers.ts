@@ -1,5 +1,7 @@
 /** Shared utilities for implementing spreadsheet functions. */
 
+import type { Ast } from '../ast/nodes';
+import type { SimpleCellAddress } from '../reference/types';
 import { coerceToBoolean, coerceToNumber, coerceToString, parseNumericString } from '../value/coercion';
 import {
   CellError,
@@ -8,6 +10,19 @@ import {
   type RawInterpreterValue,
   type RawScalarValue,
 } from '../value/types';
+
+/**
+ * The single cell a lazy reference argument points at (top-left for ranges),
+ * or undefined when the AST is not a reference. Used by ISFORMULA/FORMULATEXT.
+ */
+export function referencedAddress(
+  ast: Ast,
+  formulaAddress: SimpleCellAddress,
+): SimpleCellAddress | undefined {
+  const ref =
+    ast.type === 'CELL_REFERENCE' ? ast.reference : ast.type === 'RANGE_REFERENCE' ? ast.start : undefined;
+  return ref ? { sheet: ref.sheet ?? formulaAddress.sheet, col: ref.col, row: ref.row } : undefined;
+}
 
 /** A range where a single value is required -> #VALUE! (phase 1: no implicit intersection). */
 export function asScalar(value: RawInterpreterValue): RawScalarValue {

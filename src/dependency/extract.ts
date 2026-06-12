@@ -16,6 +16,10 @@ export const VOLATILE_FUNCTIONS: ReadonlySet<string> = new Set([
   'RANDBETWEEN',
   'OFFSET',
   'INDIRECT',
+  // Not volatile in Excel, but they answer about workbook shape, which the
+  // dependency graph cannot track; every plan re-evaluates them.
+  'SHEET',
+  'SHEETS',
 ]);
 
 /** Everything a formula reads, resolved against the address it lives at. */

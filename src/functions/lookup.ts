@@ -11,7 +11,7 @@ import {
   type RawInterpreterValue,
   type RawScalarValue,
 } from '../value/types';
-import { asBoolean, asMatrix, asNumber, asScalar, asString } from './helpers';
+import { asBoolean, asMatrix, asNumber, asScalar, asString, referencedAddress } from './helpers';
 import type { RegisteredFunction } from './types';
 
 /** Exact lookup equality: type-strict, text case-insensitive. */
@@ -330,6 +330,21 @@ export const lookupFunctions: RegisteredFunction[] = [
         return new CellError(CellErrorType.REF, 'LOOKUP result vector is too short');
       }
       return materializeCell(resultVector[found]);
+    },
+  },
+  {
+    // Lazy: reports the referenced cell's formula text (localized, like
+    // getCellFormula); ranges answer for their top-left cell, like Excel.
+    metadata: { name: 'FORMULATEXT', minArgs: 1, maxArgs: 1, argHandling: 'lazy' },
+    fn: (args: Ast[], context: EvaluationContext) => {
+      const address = referencedAddress(args[0]!, context.formulaAddress);
+      if (!address) {
+        return new CellError(CellErrorType.VALUE, 'FORMULATEXT needs a reference');
+      }
+      const formula = context.getCellFormula(address);
+      return (
+        formula ?? new CellError(CellErrorType.NA, 'The referenced cell holds no formula')
+      );
     },
   },
 ];

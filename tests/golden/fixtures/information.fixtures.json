@@ -271,5 +271,40 @@
   {
     "formula": "=ISREF(\"A1\")",
     "expected": false
+  },
+  {
+    "formula": "=ISFORMULA(A1)",
+    "inputs": {
+      "A1": 5
+    },
+    "expected": false
+  },
+  {
+    "formula": "=ISFORMULA(A1)",
+    "inputs": {},
+    "expected": false
+  },
+  {
+    "formula": "=ISFORMULA(\"x\")",
+    "expected": "#VALUE!"
+  },
+  {
+    "formula": "=SHEET()",
+    "expected": 1
+  },
+  {
+    "formula": "=SHEET(A1)",
+    "inputs": {
+      "A1": 1
+    },
+    "expected": 1
+  },
+  {
+    "formula": "=SHEETS()",
+    "expected": 1
+  },
+  {
+    "formula": "=SHEETS(A1:B2)",
+    "expected": 1
   }
 ]

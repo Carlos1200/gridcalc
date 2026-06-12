@@ -112,5 +112,28 @@
   "=ISREF(A1)",
   "=ISREF(A1:B2)",
   "=ISREF(1)",
-  "=ISREF(\"A1\")"
+  "=ISREF(\"A1\")",
+  {
+    "formula": "=ISFORMULA(A1)",
+    "inputs": {
+      "A1": 5
+    }
+  },
+  {
+    "formula": "=ISFORMULA(A1)",
+    "inputs": {}
+  },
+  {
+    "formula": "=ISFORMULA(\"x\")",
+    "expected": "#VALUE!"
+  },
+  "=SHEET()",
+  {
+    "formula": "=SHEET(A1)",
+    "inputs": {
+      "A1": 1
+    }
+  },
+  "=SHEETS()",
+  "=SHEETS(A1:B2)"
 ]

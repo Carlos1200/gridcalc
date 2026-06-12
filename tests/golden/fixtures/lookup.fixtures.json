@@ -424,5 +424,21 @@
   {
     "formula": "=ADDRESS(0,1)",
     "expected": "#VALUE!"
+  },
+  {
+    "formula": "=FORMULATEXT(A1)",
+    "inputs": {
+      "A1": 5
+    },
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=FORMULATEXT(A1)",
+    "inputs": {},
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=FORMULATEXT(\"x\")",
+    "expected": "#VALUE!"
   }
 ]

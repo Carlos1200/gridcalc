@@ -15,4 +15,12 @@ export interface EvaluationContext {
   getRangeValues(range: SimpleCellRange): RawScalarValue[][];
   /** Current value of a named expression; undefined -> #NAME?. */
   getNamedExpressionValue(name: string): RawScalarValue | undefined;
+  /** Stored formula text of a cell ("=SUM(A1:A3)"); undefined when it holds none. */
+  getCellFormula(address: SimpleCellAddress): string | undefined;
+  /** 1-based position of a sheet id among the live sheets; undefined if removed. */
+  sheetPosition(sheetId: number): number | undefined;
+  /** Same, looked up by name (case-insensitive); undefined if unknown. */
+  sheetPositionByName(name: string): number | undefined;
+  /** How many sheets currently exist. */
+  countSheets(): number;
 }
