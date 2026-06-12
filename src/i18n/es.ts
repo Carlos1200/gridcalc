@@ -182,6 +182,14 @@ export const ES_FUNCTION_NAMES: Readonly<Record<string, string>> = {
   COLUMNS: 'COLUMNAS',
   ADDRESS: 'DIRECCION',
   FORMULATEXT: 'FORMULATEXTO',
+  XLOOKUP: 'BUSCARX',
+  XMATCH: 'COINCIDIRX',
+  // arrays (phase 3)
+  SEQUENCE: 'SECUENCIA',
+  UNIQUE: 'UNICOS',
+  SORT: 'ORDENAR',
+  SORTBY: 'ORDENARPOR',
+  FILTER: 'FILTRAR',
   // information
   ISBLANK: 'ESBLANCO',
   ISNUMBER: 'ESNUMERO',

@@ -11,7 +11,16 @@ import {
   type RawInterpreterValue,
   type RawScalarValue,
 } from '../value/types';
-import { asBoolean, asMatrix, asNumber, asScalar, asString, referencedAddress } from './helpers';
+import {
+  asBoolean,
+  asMatrix,
+  asNumber,
+  asScalar,
+  asString,
+  optionalNumber,
+  referencedAddress,
+  wildcardMatch,
+} from './helpers';
 import type { RegisteredFunction } from './types';
 
 /** Exact lookup equality: type-strict, text case-insensitive. */
@@ -67,6 +76,111 @@ function findInVector(
 function materializeCell(value: RawInterpreterValue | undefined): RawInterpreterValue {
   const scalar = asScalar(value ?? EmptyValue);
   return scalar === EmptyValue ? 0 : scalar;
+}
+
+/** A single-row or single-column matrix as a flat vector; undefined otherwise. */
+function asVector(matrix: RawInterpreterValue[][]): RawScalarValue[] | undefined {
+  if (matrix[0]?.length === 1) {
+    return matrix.map((row) => asScalar(row[0]!));
+  }
+  if (matrix.length === 1) {
+    return matrix[0]!.map((cell) => asScalar(cell));
+  }
+  return undefined;
+}
+
+/**
+ * XMATCH/XLOOKUP search core: 0-based index of the match, undefined when
+ * there is none, CellError on invalid modes.
+ * match_mode: 0 exact, -1 exact or next smaller, 1 exact or next larger,
+ * 2 wildcards. search_mode: 1 first-to-last, -1 last-to-first, 2 binary over
+ * ascending data, -2 binary over descending data (sortedness is assumed,
+ * like Excel; results over unsorted data are undefined).
+ */
+function xmatchIndex(
+  vector: RawScalarValue[],
+  needle: RawScalarValue,
+  matchMode: number,
+  searchMode: number,
+): number | CellError | undefined {
+  if (![0, -1, 1, 2].includes(matchMode) || ![1, -1, 2, -2].includes(searchMode)) {
+    return new CellError(CellErrorType.VALUE, 'Invalid XMATCH/XLOOKUP mode');
+  }
+  if (searchMode === 2 || searchMode === -2) {
+    const ascending = searchMode === 2;
+    let lo = 0;
+    let hi = vector.length - 1;
+    let best: number | undefined;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const rawCmp = lookupCompare(vector[mid]!, needle);
+      if (rawCmp === 0) {
+        return mid;
+      }
+      if (rawCmp !== undefined) {
+        // Track the closest smaller/larger value; later probes converge on
+        // the boundary, so overwrites always move closer to the needle.
+        if (rawCmp < 0 && matchMode === -1) {
+          best = mid;
+        }
+        if (rawCmp > 0 && matchMode === 1) {
+          best = mid;
+        }
+      }
+      // Search coordinate: negate for descending data; incomparable cells
+      // (mixed types/empties) are treated as "greater".
+      const cmp = rawCmp === undefined ? 1 : ascending ? rawCmp : -rawCmp;
+      if (cmp < 0) {
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return matchMode === 0 || matchMode === 2 ? undefined : best;
+  }
+
+  const indices = [...vector.keys()];
+  if (searchMode === -1) {
+    indices.reverse();
+  }
+  if (matchMode === 2) {
+    for (const i of indices) {
+      const cell = vector[i]!;
+      const hit =
+        typeof needle === 'string'
+          ? typeof cell === 'string' && wildcardMatch(needle, cell)
+          : lookupEquals(cell, needle); // non-text needles match exactly
+      if (hit) {
+        return i;
+      }
+    }
+    return undefined;
+  }
+  let best: number | undefined;
+  let bestValue: RawScalarValue | undefined;
+  for (const i of indices) {
+    const cell = vector[i]!;
+    if (lookupEquals(cell, needle)) {
+      return i;
+    }
+    if (matchMode === 0) {
+      continue;
+    }
+    const cmp = lookupCompare(cell, needle);
+    if (cmp === undefined || (matchMode === -1 ? cmp > 0 : cmp < 0)) {
+      continue;
+    }
+    if (
+      best === undefined ||
+      (matchMode === -1
+        ? lookupCompare(cell, bestValue!)! > 0
+        : lookupCompare(cell, bestValue!)! < 0)
+    ) {
+      best = i;
+      bestValue = cell;
+    }
+  }
+  return best;
 }
 
 /**
@@ -345,6 +459,83 @@ export const lookupFunctions: RegisteredFunction[] = [
       return (
         formula ?? new CellError(CellErrorType.NA, 'The referenced cell holds no formula')
       );
+    },
+  },
+  {
+    // XMATCH(lookup_value, lookup_array, [match_mode=0], [search_mode=1]) -> 1-based.
+    metadata: { name: 'XMATCH', minArgs: 2, maxArgs: 4, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]) => {
+      const needle = asScalar(args[0]!);
+      if (needle instanceof CellError) {
+        return needle;
+      }
+      const vector = asVector(asMatrix(args[1]!));
+      if (!vector) {
+        return new CellError(CellErrorType.VALUE, 'XMATCH lookup_array must be a vector');
+      }
+      const matchMode = optionalNumber(args, 2, 0);
+      if (matchMode instanceof CellError) {
+        return matchMode;
+      }
+      const searchMode = optionalNumber(args, 3, 1);
+      if (searchMode instanceof CellError) {
+        return searchMode;
+      }
+      const index = xmatchIndex(vector, needle, matchMode, searchMode);
+      if (index instanceof CellError) {
+        return index;
+      }
+      return index === undefined
+        ? new CellError(CellErrorType.NA, 'XMATCH found no match')
+        : index + 1;
+    },
+  },
+  {
+    // XLOOKUP(lookup_value, lookup_array, return_array, [if_not_found],
+    //         [match_mode=0], [search_mode=1]).
+    metadata: { name: 'XLOOKUP', minArgs: 3, maxArgs: 6, argHandling: 'range-aware' },
+    fn: (args: RawInterpreterValue[]): RawInterpreterValue => {
+      const needle = asScalar(args[0]!);
+      if (needle instanceof CellError) {
+        return needle;
+      }
+      const lookupMatrix = asMatrix(args[1]!);
+      const vector = asVector(lookupMatrix);
+      if (!vector) {
+        return new CellError(CellErrorType.VALUE, 'XLOOKUP lookup_array must be a vector');
+      }
+      const vertical = lookupMatrix[0]?.length === 1 && lookupMatrix.length === vector.length;
+      const returnMatrix = asMatrix(args[2]!);
+      const returnCount = vertical ? returnMatrix.length : (returnMatrix[0]?.length ?? 0);
+      if (returnCount !== vector.length) {
+        return new CellError(CellErrorType.VALUE, 'XLOOKUP return_array does not match lookup_array');
+      }
+      const matchMode = optionalNumber(args, 4, 0);
+      if (matchMode instanceof CellError) {
+        return matchMode;
+      }
+      const searchMode = optionalNumber(args, 5, 1);
+      if (searchMode instanceof CellError) {
+        return searchMode;
+      }
+      const index = xmatchIndex(vector, needle, matchMode, searchMode);
+      if (index instanceof CellError) {
+        return index;
+      }
+      if (index === undefined) {
+        const ifNotFound = args[3];
+        return ifNotFound === undefined || ifNotFound === EmptyValue
+          ? new CellError(CellErrorType.NA, 'XLOOKUP found no match')
+          : ifNotFound;
+      }
+      if (vertical) {
+        const row = returnMatrix[index]!;
+        return row.length === 1 ? materializeCell(row[0]) : [row];
+      }
+      const column = returnMatrix.map((row) => row[index]!);
+      return column.length === 1
+        ? materializeCell(column[0])
+        : column.map((cell) => [cell]);
     },
   },
 ];

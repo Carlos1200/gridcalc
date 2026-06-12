@@ -24,6 +24,29 @@ export function referencedAddress(
   return ref ? { sheet: ref.sheet ?? formulaAddress.sheet, col: ref.col, row: ref.row } : undefined;
 }
 
+/** Optional scalar argument with a default (omitted or empty -> default), truncated. */
+export function optionalNumber(
+  args: RawInterpreterValue[],
+  index: number,
+  fallback: number,
+): number | CellError {
+  const arg = args[index];
+  if (arg === undefined || arg === EmptyValue) {
+    return fallback;
+  }
+  const n = coerceToNumber(asScalar(arg));
+  return n instanceof CellError ? n : Math.trunc(n);
+}
+
+/** Optional boolean argument defaulting to FALSE (omitted or empty). */
+export function optionalFlag(args: RawInterpreterValue[], index: number): boolean | CellError {
+  const arg = args[index];
+  if (arg === undefined || arg === EmptyValue) {
+    return false;
+  }
+  return coerceToBoolean(asScalar(arg));
+}
+
 /** A range where a single value is required -> #VALUE! (phase 1: no implicit intersection). */
 export function asScalar(value: RawInterpreterValue): RawScalarValue {
   return Array.isArray(value)

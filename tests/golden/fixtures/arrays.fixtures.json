@@ -65,5 +65,105 @@
       "A1": 5
     },
     "expected": 7
+  },
+  {
+    "formula": "=SUM(SEQUENCE(3))",
+    "expected": 6
+  },
+  {
+    "formula": "=INDEX(SEQUENCE(2,3,10,5),2,3)",
+    "expected": 35
+  },
+  {
+    "formula": "=SUM(SEQUENCE(2,2,0,1))",
+    "expected": 6
+  },
+  {
+    "formula": "=SUM(UNIQUE({1;2;2;3}))",
+    "expected": 6
+  },
+  {
+    "formula": "=SUM(UNIQUE({1;2;2;3},FALSE,TRUE))",
+    "expected": 4
+  },
+  {
+    "formula": "=CONCAT(UNIQUE({\"a\";\"A\";\"b\"}))",
+    "expected": "ab"
+  },
+  {
+    "formula": "=CONCAT(SORT({\"b\";\"a\";\"c\"}))",
+    "expected": "abc"
+  },
+  {
+    "formula": "=CONCAT(SORT({\"a\";\"b\"},1,-1))",
+    "expected": "ba"
+  },
+  {
+    "formula": "=INDEX(SORT({3,\"x\";1,\"y\";2,\"z\"},1,1),1,2)",
+    "expected": "y"
+  },
+  {
+    "formula": "=CONCAT(SORTBY({\"a\";\"b\";\"c\"},{3;1;2}))",
+    "expected": "bca"
+  },
+  {
+    "formula": "=SUM(FILTER({1;2;3},{1;0;1}))",
+    "expected": 4
+  },
+  {
+    "formula": "=FILTER({1;2},{0;0},99)",
+    "expected": 99
+  },
+  {
+    "formula": "=SUM(FILTER({1,2,3;4,5,6},{1,0,1}))",
+    "expected": 14
+  },
+  {
+    "formula": "=XLOOKUP(\"b\",{\"a\";\"b\";\"c\"},{10;20;30})",
+    "expected": 20
+  },
+  {
+    "formula": "=XLOOKUP(\"z\",{\"a\"},{1},\"nf\")",
+    "expected": "nf"
+  },
+  {
+    "formula": "=XLOOKUP(25,{10;20;30},{1;2;3},,-1)",
+    "expected": 2
+  },
+  {
+    "formula": "=XLOOKUP(25,{10;20;30},{1;2;3},,1)",
+    "expected": 3
+  },
+  {
+    "formula": "=XLOOKUP(\"b?n*\",{\"kiwi\";\"banana\"},{1;2},,2)",
+    "expected": 2
+  },
+  {
+    "formula": "=XLOOKUP(1,{1;1},{10;20},,0,-1)",
+    "expected": 20
+  },
+  {
+    "formula": "=XLOOKUP(20,{10;20;30},{1;2;3},,0,2)",
+    "expected": 2
+  },
+  {
+    "formula": "=XMATCH(20,{10;20;30})",
+    "expected": 2
+  },
+  {
+    "formula": "=XMATCH(25,{10;20;30},-1)",
+    "expected": 2
+  },
+  {
+    "formula": "=XMATCH(25,{10;20;30},1)",
+    "expected": 3
+  },
+  {
+    "formula": "=XMATCH(\"x\",{\"a\";\"b\"})",
+    "expected": "#N/A"
+  },
+  {
+    "formula": "=XMATCH(30,{30;20;10},0,-2)",
+    "expected": 1
   }
 ]

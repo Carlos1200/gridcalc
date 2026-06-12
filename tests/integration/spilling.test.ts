@@ -135,3 +135,69 @@ describe('spilling', () => {
     expect(engine.getCellValue(addr('B3'))).toBe(6);
   });
 });
+
+describe('dynamic array functions end to end', () => {
+  it('SEQUENCE spills a 2D block', () => {
+    const engine = Engine.buildEmpty();
+    engine.setCellContents(addr('A1'), '=SEQUENCE(2,3,10,5)');
+    expect(engine.getCellValue(addr('C1'))).toBe(20);
+    expect(engine.getCellValue(addr('A2'))).toBe(25);
+    expect(engine.getCellValue(addr('C2'))).toBe(35);
+  });
+
+  it('FILTER reshapes its spill when the data changes', () => {
+    const engine = Engine.buildEmpty();
+    engine.batch(() => {
+      engine.setCellContents(addr('A1'), 1);
+      engine.setCellContents(addr('A2'), 5);
+      engine.setCellContents(addr('A3'), 2);
+      engine.setCellContents(addr('C1'), '=FILTER(A1:A3,A1:A3>1)');
+      engine.setCellContents(addr('E1'), '=COUNT(C1:C3)');
+    });
+    expect(engine.getCellValue(addr('C1'))).toBe(5);
+    expect(engine.getCellValue(addr('C2'))).toBe(2);
+    expect(engine.getCellValue(addr('E1'))).toBe(2);
+
+    engine.setCellContents(addr('A1'), 9); // now three matches: grows
+    expect(engine.getCellValue(addr('C3'))).toBe(2);
+    expect(engine.getCellValue(addr('E1'))).toBe(3);
+
+    engine.batch(() => {
+      engine.setCellContents(addr('A1'), 0);
+      engine.setCellContents(addr('A2'), 0);
+      engine.setCellContents(addr('A3'), 0);
+    });
+    expect(engine.getCellValue(addr('C1'))).toMatchObject({ type: CellErrorType.CALC });
+    expect(engine.getCellValue(addr('C2'))).toBeNull(); // shrank: shadows cleared
+    expect(engine.getCellValue(addr('E1'))).toBe(0);
+  });
+
+  it('XLOOKUP with a multi-column return spills the matched row', () => {
+    const engine = Engine.buildEmpty();
+    engine.batch(() => {
+      engine.setCellContents(addr('A1'), 'ana');
+      engine.setCellContents(addr('B1'), 30);
+      engine.setCellContents(addr('C1'), 'madrid');
+      engine.setCellContents(addr('A2'), 'luis');
+      engine.setCellContents(addr('B2'), 41);
+      engine.setCellContents(addr('C2'), 'sevilla');
+      engine.setCellContents(addr('E1'), '=XLOOKUP("luis",A1:A2,B1:C2)');
+    });
+    expect(engine.getCellValue(addr('E1'))).toBe(41);
+    expect(engine.getCellValue(addr('F1'))).toBe('sevilla');
+  });
+
+  it('SORT over a live range re-sorts on edit', () => {
+    const engine = Engine.buildEmpty();
+    engine.batch(() => {
+      engine.setCellContents(addr('A1'), 3);
+      engine.setCellContents(addr('A2'), 1);
+      engine.setCellContents(addr('C1'), '=SORT(A1:A2)');
+    });
+    expect(engine.getCellValue(addr('C1'))).toBe(1);
+    expect(engine.getCellValue(addr('C2'))).toBe(3);
+    engine.setCellContents(addr('A2'), 7);
+    expect(engine.getCellValue(addr('C1'))).toBe(3);
+    expect(engine.getCellValue(addr('C2'))).toBe(7);
+  });
+});

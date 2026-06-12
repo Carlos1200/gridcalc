@@ -137,7 +137,10 @@
   - Nombres no derraman (sin grid): se quedan el valor superior-izquierdo. `copyCell` de celda derramada pega el valor
 - [x] Array literals `{1,2;3,4}` (2026-06-12): constantes de array con solo literales escalares (números con `-` opcional, texto, booleanos, errores), filas rectangulares o PARSE_ERROR. Separador de columna `,` (en) o `\` (es, `{1\2,5;3\4}`); filas siempre `;` (token `ARRAY_ROW_SEP` cuando `;` no es separador de argumentos). El serializador emite la grafía del locale; el generador traduce a ODF (`{1;2|3;4}`). Divergencia LO: rechaza booleanos en constantes (Err:539), fijado a Excel
 - [ ] Whitespace como operador de intersección
-- [ ] FILTER, SORT, SORTBY, UNIQUE, SEQUENCE, XLOOKUP, XMATCH
+- [x] FILTER, SORT, SORTBY, UNIQUE, SEQUENCE, XLOOKUP, XMATCH (2026-06-12): **190 funciones totales**, todas con golden (envueltas en SUM/INDEX/CONCAT para que LO devuelva escalares; en ODF van como `COM.MICROSOFT.*`) y nombre es (FILTRAR, ORDENAR, ORDENARPOR, UNICOS, SECUENCIA, BUSCARX, COINCIDIRX)
+  - SEQUENCE relleno row-major, dimensión 0 → `#CALC!`, negativa → `#VALUE!`; UNIQUE por filas (o columnas con `by_col`), igualdad case-insensitive, `exactly_once`; SORT estable por índice de columna (orden 1/-1, `by_col`); SORTBY multi-clave con vectores paralelos; FILTER por filas o columnas según la dimensión del include, sin matches → `if_empty` o `#CALC!`
+  - XMATCH/XLOOKUP comparten núcleo: match_mode 0/-1/1/2 (comodines), search_mode 1/-1/2/-2 (binaria asc/desc sobre datos ordenados — la coordenada de búsqueda se niega para -2, los punteros NO); XLOOKUP devuelve la fila/columna emparejada (multi-columna → derrama), `if_not_found`
+  - Integración: FILTER remodela su derrame al editar datos (crecer, encoger a `#CALC!` limpiando sombras), XLOOKUP derrama la fila, SORT re-ordena en vivo
 - [ ] Volátiles bien integradas en el ciclo de recálculo
 
 ## Fase 4 — Producto ⬜ PENDIENTE
