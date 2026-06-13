@@ -139,7 +139,7 @@ function evaluateFunctionCall(ast: FunctionCallAst, context: EvaluationContext):
     return registered.fn(ast.args, context);
   }
   const args = ast.args.map((arg) => evaluateAst(arg, context));
-  if (registered.metadata.argHandling !== 'range-aware') {
+  if (registered.metadata.argHandling !== 'range-aware' && args.some((arg) => Array.isArray(arg))) {
     // Scalar functions lift over array arguments: =ABS({-1,2}) -> {1,2}.
     return liftOverArrays(args, (scalars) => registered.fn(scalars, context));
   }
@@ -155,13 +155,17 @@ function evaluateUnaryOp(ast: UnaryOpAst, context: EvaluationContext): RawInterp
     // Excel's unary plus is a no-op on any operand, even text: =+"abc" -> "abc".
     return value;
   }
-  return liftOverArrays([value], ([scalar]) => {
-    const n = coerceToNumber(scalar!);
+  const apply = (scalar: RawScalarValue): RawInterpreterValue => {
+    const n = coerceToNumber(scalar);
     if (n instanceof CellError) {
       return n;
     }
     return ast.op === '-' ? -n : n / 100;
-  });
+  };
+  if (!Array.isArray(value)) {
+    return apply(value); // scalar fast path: no lifting allocations
+  }
+  return liftOverArrays([value], ([scalar]) => apply(scalar!));
 }
 
 /** The rectangle a reference-shaped AST denotes; #VALUE! for anything else. */
@@ -222,6 +226,9 @@ function evaluateBinaryOp(ast: BinaryOpAst, context: EvaluationContext): RawInte
   }
   if (rightValue instanceof CellError) {
     return rightValue;
+  }
+  if (!Array.isArray(leftValue) && !Array.isArray(rightValue)) {
+    return applyBinaryOp(ast.op, leftValue, rightValue, context); // scalar fast path
   }
   return liftOverArrays([leftValue, rightValue], ([left, right]) =>
     applyBinaryOp(ast.op, left!, right!, context),

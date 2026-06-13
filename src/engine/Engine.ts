@@ -117,6 +117,8 @@ export class Engine {
   private readonly redoStack: UndoRecord[] = [];
   /** Set while a public mutation runs; applyContent records prior contents here. */
   private recording: { record: UndoRecord; seen: Set<string> } | undefined;
+  /** Shared evaluation context (lazily built; formulaAddress mutates per cell). */
+  private evalContext: EvaluationContext | undefined;
 
   private constructor(config?: Partial<EngineConfig>) {
     this.config = buildConfig(config);
@@ -581,6 +583,9 @@ export class Engine {
   }
 
   private recalculate(seeds: SimpleCellAddress[]): ChangedCell[] {
+    // A single pass without spill activity never repeats an address, so the
+    // final dedupe pass is only needed when something spill-related happened.
+    let needsMerge = this.spillCleared.length > 0 || this.spillDisturbances.length > 0;
     const changes: ChangedCell[] = [...this.spillCleared];
     let pending: SimpleCellAddress[] = [
       ...seeds,
@@ -593,6 +598,9 @@ export class Engine {
     // Spilling writes cells the plan could not know about, so settle in
     // passes: each pass replans from the cells the previous one (un)covered.
     for (let pass = 0; pass === 0 || (pending.length > 0 && pass < MAX_SPILL_PASSES); pass++) {
+      if (pass > 0) {
+        needsMerge = true;
+      }
       const plan = this.graph.getRecalculationPlan(this.expandWatchers(pending), pass === 0);
       pending = [];
 
@@ -604,7 +612,10 @@ export class Engine {
           continue;
         }
         const error = new CellError(CellErrorType.CIRCULAR, 'Circular reference');
-        this.retractSpill(address, cell, changes, pending);
+        if (cell.spill !== undefined) {
+          needsMerge = true;
+          this.retractSpill(address, cell, changes, pending);
+        }
         if (!valuesEqual(cell.value, error)) {
           cell.value = error;
           changes.push({ address, value: error });
@@ -612,19 +623,32 @@ export class Engine {
       }
 
       for (const address of plan.order) {
-        const cell = this.cells.get(cellAddressKey(address));
+        const key = cellAddressKey(address);
+        const cell = this.cells.get(key);
         if (cell?.kind !== 'formula') {
           continue; // plain values and spill shadows have nothing to compute
         }
-        const raw = evaluateAst(cell.ast, this.contextFor(address));
-        const value = this.settleResult(address, cell, raw, changes, pending);
+        // One shared context per engine: only the formula address changes
+        // between evaluations, so reuse the object and its closures.
+        const context = (this.evalContext ??= this.contextFor(address));
+        context.formulaAddress = address;
+        const raw = evaluateAst(cell.ast, context);
+        let value: ScalarValue;
+        if (Array.isArray(raw) || cell.spill !== undefined || this.watchedByAnchor.has(key)) {
+          // Spill bookkeeping (writes, retractions, watch cleanup) may repeat
+          // addresses in `changes`, so the final dedupe pass is required.
+          needsMerge = true;
+          value = this.settleResult(address, cell, raw, changes, pending);
+        } else {
+          value = materialize(raw); // scalar fast path
+        }
         if (!valuesEqual(cell.value, value)) {
           cell.value = value;
           changes.push({ address, value });
         }
       }
     }
-    return mergeChanges([], changes);
+    return needsMerge ? mergeChanges([], changes) : changes;
   }
 
   /** Blocked anchors watching any of the edited cells re-evaluate too. */
