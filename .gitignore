@@ -3,3 +3,7 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# site build artifacts
+site/gridcalc.js
+site/functions.json

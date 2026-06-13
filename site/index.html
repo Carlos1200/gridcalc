@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>gridcalc — the spreadsheet engine without the spreadsheet</title>
+  <meta name="description" content="A headless Excel-compatible formula engine in pure TypeScript. 212 functions, dynamic arrays with spilling, incremental recalculation, zero runtime dependencies." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="nav__inner">
+    <a class="nav__brand" href="#top">gridcalc</a>
+    <button class="searchpill" id="searchpill" aria-label="Search the 212 functions (⌘K)">
+      <span class="searchpill__text">Search 212 functions…</span>
+      <span class="searchpill__kbd"><kbd>⌘</kbd><kbd>K</kbd></span>
+    </button>
+    <nav class="nav__right" aria-label="Primary">
+      <a class="nav__link" href="#playground">Playground</a>
+      <a class="nav__link" href="#functions">Functions</a>
+      <a class="nav__link nav__link--gh" href="https://github.com/" data-repo-link>GitHub</a>
+      <button class="btn btn--accent" id="nav-install" data-copy="npm install gridcalc">npm install</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Hero · H2 split diptych: claim left, the engine itself right ── -->
+  <section class="hero">
+    <div class="hero__copy reveal" style="--i: 0">
+      <p class="eyebrow"><span class="eyebrow__tick" aria-hidden="true"></span>HEADLESS FORMULA ENGINE</p>
+      <h1>The spreadsheet engine without the spreadsheet.</h1>
+      <p class="hero__lede">
+        gridcalc parses, evaluates and incrementally recalculates Excel formulas in pure
+        TypeScript — 212 functions, dynamic arrays with spilling, a dependency graph,
+        zero runtime dependencies. Every function is golden-tested against LibreOffice.
+      </p>
+      <div class="hero__actions">
+        <button class="btn btn--accent btn--lg" data-copy="npm install gridcalc">
+          <code>npm install gridcalc</code>
+        </button>
+        <a class="textlink" href="#playground">Open the playground<span aria-hidden="true"> ↓</span></a>
+      </div>
+    </div>
+    <figure class="hero__demo reveal" style="--i: 1" aria-label="Live demo: a formula spilling into a grid">
+      <div class="demo-formula">
+        <span class="demo-formula__cell mono">A1</span>
+        <code class="demo-formula__text mono" id="hero-formula" aria-live="polite"></code>
+      </div>
+      <div class="minigrid" id="hero-grid" role="img" aria-label="Result grid: SEQUENCE(4,3) spilled into twelve cells"></div>
+      <figcaption class="demo-status mono">
+        <span class="chip chip--ok" id="hero-status" hidden>evaluated</span>
+        <span id="hero-timing"></span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ── Playground · the macrostructure's centerpiece ── -->
+  <section class="playground" id="playground">
+    <header class="section-head reveal" style="--i: 0">
+      <h2>Try it. This is the real engine.</h2>
+      <p>
+        The grid below runs the same <code class="mono">Engine</code> you get from npm,
+        compiled to this page. Type a formula, watch dependents recalculate, break a
+        spill on purpose.
+      </p>
+    </header>
+
+    <div class="pg reveal" style="--i: 1">
+      <div class="pg__rail" role="group" aria-label="Example scenarios">
+        <button class="chip-btn is-active" data-example="spilling">Spilling</button>
+        <button class="chip-btn" data-example="xlookup">XLOOKUP</button>
+        <button class="chip-btn" data-example="broadcast">Broadcasting</button>
+        <button class="chip-btn" data-example="financial">Financial</button>
+        <button class="chip-btn" data-example="intersection">Intersection</button>
+        <button class="chip-btn" data-example="es">Locale es</button>
+      </div>
+
+      <div class="pg__bar">
+        <span class="pg__cellref mono" id="pg-cellref">A1</span>
+        <input class="pg__input mono" id="pg-input" type="text" spellcheck="false"
+               autocomplete="off" aria-label="Formula or value for the selected cell"
+               placeholder="=SEQUENCE(5)" />
+        <button class="btn btn--ghost" id="pg-apply">Set cell</button>
+      </div>
+
+      <div class="pg__gridwrap">
+        <table class="grid" id="pg-grid" aria-label="Spreadsheet grid, editable"></table>
+      </div>
+
+      <div class="pg__foot">
+        <p class="demo-status mono"><span id="pg-status"></span></p>
+        <label class="locale mono">
+          <span>locale</span>
+          <select id="pg-locale" aria-label="Engine locale">
+            <option value="en" selected>en · =SUM(A1:A3)</option>
+            <option value="es">es · =SUMA(A1:A3)</option>
+          </select>
+        </label>
+      </div>
+      <p class="pg__hint" id="pg-hint">Click any cell to inspect its formula. Type into the bar and press Enter.</p>
+    </div>
+  </section>
+
+  <!-- ── Function reference · introspected from the registry ── -->
+  <section class="reference" id="functions">
+    <header class="section-head section-head--split reveal" style="--i: 0">
+      <div>
+        <h2>Every function, from the registry itself.</h2>
+        <p>
+          This list is not hand-written documentation — it is generated from the same
+          <code class="mono">FunctionRegistry</code> the engine evaluates with, the way a
+          GraphQL playground introspects a schema. Click a name to load it into the playground.
+        </p>
+      </div>
+      <div class="reference__tools">
+        <input class="reference__search mono" id="fn-search" type="search"
+               placeholder="Filter… try lookup, TIR, volatile" aria-label="Filter functions" />
+        <p class="reference__count mono" id="fn-count" aria-live="polite"></p>
+      </div>
+    </header>
+    <div class="reference__tablewrap reveal" style="--i: 1">
+      <table class="fn-table" id="fn-table">
+        <thead>
+          <tr>
+            <th scope="col">Function</th>
+            <th scope="col">es</th>
+            <th scope="col">Args</th>
+            <th scope="col">Category</th>
+            <th scope="col"><span class="visually-hidden">Traits</span></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Quickstart · the page's one dark band ── -->
+  <section class="quickstart">
+    <div class="quickstart__inner">
+      <div class="quickstart__copy reveal" style="--i: 0">
+        <h2>From install to recalculation in eight lines.</h2>
+        <p>
+          No DOM, no canvas, no worker setup. The engine is a plain class: feed it cells,
+          read values, subscribe to what changed.
+        </p>
+        <button class="btn btn--light" data-copy="npm install gridcalc">
+          <code>npm install gridcalc</code>
+        </button>
+      </div>
+      <div class="codecard reveal" style="--i: 1">
+        <div class="codecard__head mono"><span>quickstart.ts</span><button class="codecard__copy mono" id="copy-quickstart">copy</button></div>
+<pre class="mono" id="quickstart-code"><code><span class="tk">import</span> { Engine } <span class="tk">from</span> <span class="ts">"gridcalc"</span>;
+
+<span class="tk">const</span> engine = Engine.buildEmpty();
+engine.setCellContents({ sheet: <span class="tn">0</span>, col: <span class="tn">0</span>, row: <span class="tn">0</span> }, <span class="tn">1200</span>);
+engine.setCellContents({ sheet: <span class="tn">0</span>, col: <span class="tn">0</span>, row: <span class="tn">1</span> }, <span class="tn">800</span>);
+engine.setCellContents({ sheet: <span class="tn">0</span>, col: <span class="tn">1</span>, row: <span class="tn">0</span> }, <span class="ts">"=SUM(A1:A2)*1.21"</span>);
+
+engine.getCellValue({ sheet: <span class="tn">0</span>, col: <span class="tn">1</span>, row: <span class="tn">0</span> }); <span class="tc">// 2420</span></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Spec strip · real numbers only ── -->
+  <section class="specs reveal" style="--i: 0" aria-label="Project facts">
+    <dl class="specs__row">
+      <div><dt class="mono">functions</dt><dd>212</dd></div>
+      <div><dt class="mono">runtime deps</dt><dd>0</dd></div>
+      <div><dt class="mono">tests</dt><dd>1,075</dd></div>
+      <div><dt class="mono">locales</dt><dd>en · es</dd></div>
+      <div><dt class="mono">license</dt><dd>AGPL-3.0</dd></div>
+    </dl>
+    <p class="specs__note">
+      Functions ship with golden tests generated against LibreOffice — normal cases, edge
+      cases, wrong types with the exact error, ranges and error propagation. Divergences
+      from Excel are pinned to Excel's behaviour and documented.
+    </p>
+  </section>
+
+</main>
+
+<footer class="foot-line">
+  <p class="mono">gridcalc · AGPL-3.0 · <a href="https://github.com/" data-repo-link>GitHub</a> · <a href="https://www.npmjs.com/package/gridcalc">npm</a></p>
+</footer>
+
+<!-- ── ⌘K palette · searches the introspected registry ── -->
+<div class="cmdk" id="cmdk" aria-hidden="true">
+  <div class="cmdk__backdrop" data-close></div>
+  <div class="cmdk__panel" role="dialog" aria-modal="true" aria-label="Function search">
+    <div class="cmdk__field">
+      <input class="mono" id="cmdk-input" placeholder="Search 212 functions… SUM, BUSCARX, npv" autocomplete="off" />
+      <kbd class="mono">esc</kbd>
+    </div>
+    <div class="cmdk__results" id="cmdk-results" role="listbox" aria-label="Matching functions"></div>
+    <div class="cmdk__foot mono">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> insert into playground</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

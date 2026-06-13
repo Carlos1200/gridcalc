@@ -25,7 +25,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests scripts",
     "generate-fixtures": "tsx scripts/generate-fixtures.ts",
-    "bench": "tsx scripts/benchmark.ts"
+    "bench": "tsx scripts/benchmark.ts",
+    "site:build": "npm run build && cp dist/index.js site/gridcalc.js && tsx scripts/generate-site-docs.ts",
+    "site:serve": "npm run site:build && python3 -m http.server 4173 -d site"
   },
   "engines": {
     "node": ">=18"

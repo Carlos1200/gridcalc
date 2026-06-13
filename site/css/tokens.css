@@ -1,0 +1,82 @@
+/* Hallmark · pre-emit critique: P4 H5 E4 S5 R5 V4
+ * Hallmark · genre: modern-minimal · macrostructure: Component Playground · theme: Cobalt
+ * tone: technical (inferred) · audience: developers · use: npm install
+ * nav: N13 inline ⌘K pill · footer: Ft2 inline single line · enrichment: none (live engine demo)
+ * anchor hue: 256 (electric cobalt) · paper band: cool light · display: grotesk-sans
+ */
+
+:root {
+  /* — Cobalt palette · cool engineered paper, one electric signal — */
+  --color-paper:    oklch(98.5% 0.004 250);
+  --color-paper-2:  oklch(96.5% 0.006 250);
+  --color-rule:     oklch(90% 0.008 252);
+  --color-rule-2:   oklch(82% 0.012 254);
+  --color-neutral:  oklch(48% 0.016 256);
+  --color-muted:    oklch(45% 0.016 256);
+  --color-body:     oklch(34% 0.018 257);
+  --color-ink:      oklch(24% 0.02 258);
+  --color-accent:   oklch(58% 0.2 256);
+  --color-accent-deep: oklch(48% 0.19 256);
+  --color-accent-deeper: oklch(42% 0.18 256);
+  --color-accent-wash: oklch(94% 0.025 256);
+  --color-focus:    oklch(58% 0.2 256);
+  --color-error:    oklch(50% 0.19 25);
+  --color-paper-veil: oklch(98.5% 0.004 250 / 0.85);
+  --color-scrim:    oklch(24% 0.02 258 / 0.4);
+
+  /* — the graphite register (code card + the page's one dark band) — */
+  --color-graphite:    oklch(22% 0.016 260);
+  --color-graphite-2:  oklch(26% 0.018 260);
+  --color-graphite-rule: oklch(34% 0.018 260);
+  --color-on-graphite: oklch(92% 0.008 254);
+  --color-on-graphite-muted: oklch(68% 0.014 256);
+  --color-accent-bright: oklch(72% 0.16 256);
+  --color-token-string: oklch(80% 0.09 150);
+
+  /* — type · Space Grotesk display + Inter body + JetBrains Mono labels/code — */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-display-s: clamp(1.75rem, 2.2vw + 1rem, 2.625rem);
+  --text-display: clamp(2.5rem, 4.2vw + 0.75rem, 4.5rem);
+
+  /* — 4pt spacing scale — */
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  /* — motion — */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  /* — drawn with a ruler — */
+  --radius-control: 6px;
+  --radius-card: 10px;
+  --rule-hairline: 1px solid var(--color-rule);
+  --shadow-whisper: 0 1px 2px oklch(20% 0.01 256 / 0.05);
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}

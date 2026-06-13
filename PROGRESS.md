@@ -164,7 +164,8 @@
 
 - [ ] Decidir nombre definitivo en npm y publicar (gridcalc estaba libre el 2026-06-09)
 - [ ] Empaquetado doble licencia (AGPL público + build comercial)
-- [ ] Docs, demos, sitio
+- [x] Sitio con playground autodocumentado (2026-06-12, `site/`): estático vanilla (cero deps, GitHub Pages vía `.github/workflows/pages.yml`). La referencia de funciones se **introspecciona del registro** (`scripts/generate-site-docs.ts` → `functions.json`: 212 entradas con aridad/volatile/lazy/nombre es) al estilo GraphQL; el playground ejecuta el bundle ESM real (`npm run site:build` copia `dist/index.js`) con grid editable, 6 escenarios (spilling, XLOOKUP, broadcasting, financiero, intersección, locale es), toggle en/es que traduce fórmulas con `parseFormula`+`serializeAst`, y palette ⌘K buscando las 212 funciones. Diseño vía skill Hallmark (tema Cobalt, 57 gates auditados). Preview local: `npm run site:serve`. Pendiente: fijar `REPO_URL` en `site/js/app.js` al publicar el repo
+- [ ] Docs y demos adicionales (README ampliado, guía de API)
 
 ## Comandos
 
