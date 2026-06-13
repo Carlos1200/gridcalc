@@ -147,7 +147,7 @@
   - Integración: FILTER remodela su derrame al editar datos (crecer, encoger a `#CALC!` limpiando sombras), XLOOKUP derrama la fila, SORT re-ordena en vivo
 - [x] Volátiles bien integradas en el ciclo de recálculo (2026-06-12): `FunctionRegistry` mantiene el set de nombres con `volatile: true` y `extractDependencies` lo recibe como parámetro extra (el set estático `VOLATILE_FUNCTIONS` sigue cubriendo nombres aún no implementados como OFFSET/INDIRECT). Funciones custom registradas como volátiles se re-evalúan en cada edición (test incluido); cierra el pendiente de Fase 1
 
-## Fase 4 — Producto 🔶 EN CURSO
+## Fase 4 — Producto ✅ COMPLETA (2026-06-12)
 
 - [x] `toJSON`/`fromJSON`, undo/redo (2026-06-12)
   - `toJSON()` serializa config completa, slots de hoja (`null` = hueco de hoja borrada → los ids estables sobreviven el round-trip), contenidos crudos (fórmulas como texto, errores como display string `{error: "#N/A"}`) y named expressions; las sombras de derrame NO viajan (se recomputan en `fromJSON`). `Engine.fromJSON()` reconstruye vía `batch` + `addNamedExpression` y arranca con historial vacío
@@ -158,7 +158,7 @@
   - 100k valores + 100 SUMs: editar un valor → **0.4ms**; grid de 100k fórmulas, edición con clausura pequeña → **0.1ms**; cadena de 50k fórmulas dependientes en cascada completa → **64ms** (antes 126); estrés 100% sucio (100k fórmulas re-evaluadas) → 167ms (antes 305), ~1.7µs/fórmula
   - Optimizaciones: contexto de evaluación compartido por engine (antes un objeto+9 closures por fórmula evaluada), fast path escalar en operadores binarios/unarios y despacho de funciones (sin pasar por `liftOverArrays` cuando no hay arrays), fast path sin contabilidad de spill para fórmulas escalares sin estado de derrame/vigilancia, y dedupe final de cambios solo cuando hubo actividad de spill o multipasada
   - Margen futuro si hiciera falta: claves string en Tarjan/grafo (≈40% del caso 100% sucio)
-- [ ] Mejorar `numberToText` a fidelidad de formato General de Excel
+- [x] `numberToText` con fidelidad de formato General (2026-06-12): máximo 15 dígitos significativos (`=1/3&""` → `0.333333333333333`, `0.1+0.2` → `"0.3"` incluso sin precisionRounding), decimal plano en [1e-4, 1e21) y científico fuera (`1E-05`, `1.5E+21`, exponente a ≥2 dígitos), `-0` → `0`. Golden vía coerción `&""` (LO coincide en valor; los resultados-texto con pinta numérica van con `expected` string manual porque el CSV los re-convierte a número, como FIXED)
 
 ## Fase 5 — Comercial ⬜ PENDIENTE
 
