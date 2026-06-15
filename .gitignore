@@ -7,3 +7,9 @@ coverage/
 # site build artifacts
 site/gridcalc.js
 site/functions.json
+
+# local agent/tooling state (not part of the project)
+.omc/
+.claude/
+.agents/
+skills-lock.json
