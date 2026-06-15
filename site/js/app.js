@@ -8,8 +8,7 @@ import {
   isCellError,
 } from '../gridcalc.js';
 
-// TODO(repo): set once the repository is public.
-const REPO_URL = 'https://github.com/';
+const REPO_URL = 'https://github.com/Carlos1200/gridcalc';
 
 const COLS = 8;
 const ROWS = 8;
