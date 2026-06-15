@@ -2,7 +2,7 @@
 
 > Documento de seguimiento para sesiones de trabajo. Marcar ítems al completarlos.
 > La especificación completa está en `docs/SPEC.md` (fuente de verdad del diseño).
-> Última actualización: 2026-06-12.
+> Última actualización: 2026-06-14.
 
 ## Decisiones tomadas
 
@@ -165,6 +165,7 @@
 - [ ] Decidir nombre definitivo en npm y publicar (gridcalc estaba libre el 2026-06-09)
 - [ ] Empaquetado doble licencia (AGPL público + build comercial)
 - [x] Sitio con playground autodocumentado (2026-06-12, `site/`): estático vanilla (cero deps, GitHub Pages vía `.github/workflows/pages.yml`). La referencia de funciones se **introspecciona del registro** (`scripts/generate-site-docs.ts` → `functions.json`: 212 entradas con aridad/volatile/lazy/nombre es) al estilo GraphQL; el playground ejecuta el bundle ESM real (`npm run site:build` copia `dist/index.js`) con grid editable, 6 escenarios (spilling, XLOOKUP, broadcasting, financiero, intersección, locale es), toggle en/es que traduce fórmulas con `parseFormula`+`serializeAst`, y palette ⌘K buscando las 212 funciones. Diseño vía skill Hallmark (tema Cobalt, 57 gates auditados). Preview local: `npm run site:serve`. Pendiente: fijar `REPO_URL` en `site/js/app.js` al publicar el repo
+- [x] Documentación completa de funciones en el sitio (2026-06-14): catálogo de prosa en `src/functions/docs.ts` (`FUNCTION_DOCS` keyed por nombre canónico — summary, params con opcionales, returns, example), mergeado por el generador a `functions.json` (avisa si falta alguna; las 212 cubiertas). Cada nombre en la tabla expande un panel con descripción, firma, parámetros, retorno y un ejemplo **evaluado en vivo con el motor real** (traducido al locale activo); botón explícito para insertar en el playground
 - [ ] Docs y demos adicionales (README ampliado, guía de API)
 
 ## Comandos

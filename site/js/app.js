@@ -324,13 +324,143 @@ function argsLabel(fn) {
   return `${fn.minArgs}–${fn.maxArgs}`;
 }
 
+function localizedName(name) {
+  return pg.locale === 'es' ? (FUNCTIONS.find((f) => f.name === name)?.es ?? name) : name;
+}
+
 function insertIntoPlayground(name) {
-  const localized = pg.locale === 'es'
-    ? (FUNCTIONS.find((f) => f.name === name)?.es ?? name)
-    : name;
-  inputEl.value = `=${localized}(`;
+  inputEl.value = `=${localizedName(name)}(`;
   document.querySelector('#playground').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   inputEl.focus({ preventScroll: true });
+}
+
+/** Evaluates a self-contained example with a throwaway engine, in English. */
+function evalExample(formula) {
+  try {
+    const engine = Engine.buildEmpty();
+    engine.setCellContents(addr(0, 0), formula);
+    const value = engine.getCellValue(addr(0, 0));
+    if (value !== null && isCellError(value)) return null;
+    return fmt(value);
+  } catch {
+    return null;
+  }
+}
+
+/** Builds the signature line "NAME(param1, param2, …)" from the param docs. */
+function signature(fn) {
+  const inner = fn.params.length
+    ? fn.params.map((p) => (p.optional ? `[${p.name}]` : p.name)).join(', ')
+    : '';
+  return `${localizedName(fn.name)}(${inner})`;
+}
+
+/** The expandable documentation panel for one function, as a <tr>. */
+function buildDetailRow(fn) {
+  const tr = document.createElement('tr');
+  tr.className = 'fn-detail';
+  const td = document.createElement('td');
+  td.colSpan = 5;
+  const doc = document.createElement('div');
+  doc.className = 'fn-doc';
+
+  if (!fn.summary) {
+    const none = document.createElement('p');
+    none.className = 'fn-doc__summary';
+    none.textContent = 'No prose yet — run npm run site:build to regenerate.';
+    doc.append(none);
+    td.append(doc);
+    tr.append(td);
+    return tr;
+  }
+
+  const summary = document.createElement('p');
+  summary.className = 'fn-doc__summary';
+  summary.textContent = fn.summary;
+
+  const sig = document.createElement('p');
+  sig.className = 'fn-doc__sig mono';
+  sig.textContent = signature(fn);
+
+  doc.append(sig, summary);
+
+  if (fn.params.length) {
+    const dl = document.createElement('dl');
+    dl.className = 'fn-doc__params';
+    for (const p of fn.params) {
+      const row = document.createElement('div');
+      const dt = document.createElement('dt');
+      dt.className = 'mono';
+      dt.textContent = p.name;
+      if (p.optional) {
+        const tag = document.createElement('span');
+        tag.className = 'fn-doc__opt';
+        tag.textContent = 'optional';
+        dt.append(' ', tag);
+      }
+      const dd = document.createElement('dd');
+      dd.textContent = p.description;
+      row.append(dt, dd);
+      dl.append(row);
+    }
+    doc.append(dl);
+  }
+
+  if (fn.paramReturns) {
+    const ret = document.createElement('p');
+    ret.className = 'fn-doc__returns';
+    const label = document.createElement('span');
+    label.className = 'fn-doc__label';
+    label.textContent = 'Returns';
+    ret.append(label, document.createTextNode(' ' + fn.paramReturns));
+    doc.append(ret);
+  }
+
+  if (fn.example) {
+    const shown = translate(fn.example, 'en', pg.locale);
+    const result = fn.exampleResult ?? evalExample(fn.example);
+    const ex = document.createElement('div');
+    ex.className = 'fn-doc__example';
+    const formula = document.createElement('code');
+    formula.className = 'mono fn-doc__formula';
+    formula.textContent = shown;
+    ex.append(formula);
+    if (result !== null) {
+      const arrow = document.createElement('span');
+      arrow.className = 'fn-doc__arrow';
+      arrow.textContent = '→';
+      const out = document.createElement('code');
+      out.className = 'mono fn-doc__result';
+      out.textContent = result;
+      ex.append(arrow, out);
+    }
+    doc.append(ex);
+  }
+
+  const insert = document.createElement('button');
+  insert.className = 'fn-doc__insert mono';
+  insert.dataset.insert = fn.name;
+  insert.textContent = 'Insert into playground →';
+  doc.append(insert);
+
+  td.append(doc);
+  tr.append(td);
+  return tr;
+}
+
+function toggleDetail(nameBtn) {
+  const row = nameBtn.closest('tr');
+  const open = nameBtn.getAttribute('aria-expanded') === 'true';
+  // Collapse any other open panel — one at a time keeps the list scannable.
+  document.querySelectorAll('#fn-table .fn-detail').forEach((el) => el.remove());
+  document
+    .querySelectorAll('#fn-table .fn-name[aria-expanded="true"]')
+    .forEach((el) => el.setAttribute('aria-expanded', 'false'));
+  if (open) return;
+  const fn = FUNCTIONS.find((f) => f.name === nameBtn.dataset.fn);
+  if (!fn) return;
+  nameBtn.setAttribute('aria-expanded', 'true');
+  row.after(buildDetailRow(fn));
 }
 
 function renderTable(query) {
@@ -341,13 +471,14 @@ function renderTable(query) {
       fn.name.toLowerCase().includes(q) ||
       fn.es.toLowerCase().includes(q) ||
       fn.category.includes(q) ||
+      (fn.summary ?? '').toLowerCase().includes(q) ||
       (q === 'volatile' && fn.volatile) ||
       (q === 'lazy' && fn.lazy),
   );
   const body = rows
     .map(
-      (fn) => `<tr>
-        <td><button class="fn-name" data-fn="${fn.name}">${fn.name}</button></td>
+      (fn) => `<tr class="fn-row">
+        <td><button class="fn-name" data-fn="${fn.name}" aria-expanded="false">${fn.name}</button></td>
         <td class="fn-es">${fn.es === fn.name ? '·' : fn.es}</td>
         <td class="fn-args">${argsLabel(fn)}</td>
         <td class="fn-cat">${fn.category}</td>
@@ -362,8 +493,13 @@ function renderTable(query) {
 
 $('fn-search').addEventListener('input', (e) => renderTable(e.target.value));
 document.querySelector('#fn-table').addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-fn]');
-  if (btn) insertIntoPlayground(btn.dataset.fn);
+  const insert = e.target.closest('[data-insert]');
+  if (insert) {
+    insertIntoPlayground(insert.dataset.insert);
+    return;
+  }
+  const name = e.target.closest('.fn-name');
+  if (name) toggleDetail(name);
 });
 
 /* ── ⌘K palette ─────────────────────────────────────────────────────── */
